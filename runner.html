@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="./libs/jquery-1.11.1.min.js"></script>
+    <script src="./libs/angular.min.js"></script>
+    <script src="./libs/lodash.min.js"></script>
+</head>
+<body>
+
+
+    <div><button el-import="userCard" role="save" ng-click="user.save()">save for 1</button></div>
+
+    <div id="userCard" user-card-form gm-source="data('user','global.user') as user" style="padding: 10px;border: 1px cornflowerblue solid;margin: 10px;"></div>
+
+    <div id="userCard2" user-card-form  tpl-replace gm-source="data.get('user','global.user') as user" style="padding: 10px;border: 1px darkred solid;margin: 10px;">
+        name : <input type="text" ng-model="user.name">
+        gender : <input type="text" ng-model="user.gender">
+        <button role="save" ng-click="user.save()">save also</button>
+        <div>saving : {{user.$$saving}}</div>
+        <div>{{user.name}}</div>
+        <div>saved : {{user.$$saved}}</div>
+    </div>
+
+    <div id="userCard3" user-card-form  tpl-replace="role" gm-source="data.get('user','global.user') as user" style="padding: 10px;border: 1px darkred solid;margin: 10px;">
+        <button role="save" ng-click="user.save()">only changed button</button>
+    </div>
+
+
+    <button onClick="el('ecs-create-modal').open()">open modal</button>
+
+    <my-modal id="ecs-create-modal" style="border:1px cornflowerblue solid">
+        <modal-body style="display: block;padding:10px">
+            <div id="userCard4" gm-source="data.get('user','global.user') as user" user-card-form tpl-replace="role" onSubmit="el('ecs-create-modal').hide()">
+                <div role="input"></div>
+            </div>
+        </modal-body>
+        <modal-foot style="display: block">
+            <button type="submit" el-import="userCard4" role="save" ng-click="user.save()">save</button>
+        </modal-foot>
+    </my-modal>
+
+
+
+
+
+<script src="./src/Element.js"></script>
+<script src="./src/DataSource.js"></script>
+<!--<script src="./src/Binding.js"></script>-->
+<script src="./adapter.js"></script>
+<script src="./directives.js"></script>
+<script src="./bootstrap.js"></script>
+</body>
+</html>
