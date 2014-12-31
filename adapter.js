@@ -1,4 +1,3 @@
-//hacker
 (function(){
 
   var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;

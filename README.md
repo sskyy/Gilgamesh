@@ -37,6 +37,7 @@ D("user").receive("global.user")
 #### 5. Available data status and methods
 
 ```
+$$filled    //is data filled from ajax data
 $$valid     //need method validate implemented
 $$dirty		//is data changed?
 $$empty		//is data equal to undefined, null, or "".

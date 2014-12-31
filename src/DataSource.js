@@ -1,82 +1,128 @@
-var   global = this
+var _  = require("lodash")
+var DataObject  = require("./DataObject.js")
+var DataArray = require("./DataArray")
+var $ = require("../libs/jquery-1.11.1.min.js")
 
+function DataSource( name, def ){
+  _.extend( this, _.defaults( def, {
+    url : {
+      collection : "/" + name+"/{action}",
+      single: "/" + name+"/{id}/{action}"
+    },
+    pk : "id" //allow array
+  }))
+}
 
-function DataObject( proto ){
-  this.$$keys = Object.keys(proto)
-  _.extend( this, proto )
-  this.setupObservers()
+DataSource.prototype.query = function( settings ){
+  return $.ajax(settings)
+}
+
+DataSource.prototype.parse = function( data ){
+  return data
+}
+
+DataSource.prototype.interpolate = function( text, obj ){
+  return text.replace(/(\{\w+\})/g, function( m ){ return obj[m.slice(1,m.length-1)] || "" })
+}
+
+DataSource.prototype.makeUrl = function( params ){
+  return this.interpolate( this.hasPrimaryKey(params )? this.url.single : this.url.collection, params).replace(/\/$/,"")
 }
 
 
-DataObject.prototype.setupObservers = function(){
-  var root = this
-  _.forEach(["$$valid", "$$empty", "$$validating", "$$saving" , "$$saved"], function(key){
-    root[key] = null
-  })
-
-  _.forEach(["$$dirty"],function(key){
-    root[key] = false
-  })
-
-  root.$$watchers = {}
-
-  Object.observe(this, function(changes){
-    changes && changes.forEach(root.dispatchChanges.bind(root))
-  })
+DataSource.prototype.hasPrimaryKey = function( params ){
+  return !_.isObject( params ) || _.difference( [].concat(this.pk),  Object.keys(params)).length == 0
 }
 
-//change : {name, obj, type, oldValue}
-DataObject.prototype.dispatchChanges = function( change ){
-  console.log("changing", change.name, this.$$watchers[change.name].length)
-  if( this.$$watchers[change.name] ){
-    this.$$watchers[change.name].forEach(function( handler ){
-      try{
-        handler(change.object[change.name], change.oldValue)
-      }catch(e){
-        console.log(e)
-      }
+
+//we need to extract primary key from params
+DataSource.prototype.makeQuery = function( params){
+  var result = _.clone(_.isObject(params)?params:{})
+  _.forEach([].concat(this.pk), function(r){
+      delete result[r]
     })
-  }
+  return result
 }
 
-DataObject.prototype.watch = function( name, handler ){
-  this.$$watchers[name] ?  this.$$watchers[name].push(handler) : (this.$$watchers[name] = [handler])
+DataSource.prototype.makeData = function( data ){
+  var result = _.cloneDeep(data)
+  _.forEach(result, function(v, k){
+    if( /^\$\$/.test(k) ) delete result[k]
+  })
+  return result
 }
 
-DataObject.prototype.validate = function(){
 
-}
-
-DataObject.prototype.save = function(){
-  this.$$saving = true
+DataSource.prototype.setupInstanceMethod = function( instance ){
   var root = this
-  window.setTimeout(function(){
-    root.$$saved = true
-    root.$$saving= false
-  },1000)
+  _.forEach(["save","delete","validate"],function( method ){
+    instance[method] = root[method].bind(root,instance)
+  })
+  return instance
 }
 
+DataSource.prototype.save = function( instance ){
+  var root = this
+  instance.$$saving = true
+  instance.$$saved = false
+  instance.notify()
+  this.query({
+    url:root.makeUrl(instance),
+    type: root.hasPrimaryKey(instance) ? "PUT" : "POST",
+    data : root.makeData(instance)
+  }).then(function(){
+    instance.$$saved = true
+  }).finally(function(){
+    instance.$$saving = false
+    instance.notify()
+  })
+}
 
+DataSource.prototype.delete = function( instance){
+  var root = this
+  instance.$$deleting = true
+  instance.$$deleted = false
+  this.query({
+    url:root.makeUrl(instance),
+    type: "DELETE"
+  }).then(function(){
+    instance.$$deleted = true
+  }).finally(function(){
+    instance.$$deleting = false
+    instance.notify()
+  })
+}
 
-var dataSources = {}
+DataSource.prototype.validate = function(instance){
+  instance.$$validating = false
+  instance.$$validated = true
+  instance.notify()
+}
 
-global.data = function( source, id ){
-  if( !dataSources[source] ) dataSources[source] = {}
-  dataSources[source][id] = new DataObject({
-    "id" : "123123",
-    "name" : "Gilgamesh",
-    "gender" : "male"
+DataSource.prototype.get = function( params ){
+  params = params ? (_.isObject(params) ? params : _.zipObject([this.pk],[params]) ) : {}
+
+  var root = this
+  var result = this.setupInstanceMethod( this.hasPrimaryKey(params) ? new DataObject : new DataArray )
+
+  this.query( {url:this.makeUrl(params),type:"GET",data:this.makeQuery(params)} ).then(function( res ){
+    result.set( root.parse( res ) )
+    result.notify()
   })
 
-  return dataSources[source][id]
+  return result
 }
 
-global.data.get = function( source, id ){
-  return dataSources[source][id]
+DataSource.prototype.publish = function( name ){
+
 }
 
+DataSource.prototype.receive = function(name){
 
+}
 
+DataSource.prototype.exec = function( action ){
 
+}
 
-
+module.exports = DataSource

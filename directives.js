@@ -1,16 +1,15 @@
 angular.module("Gilgamesh",[])
-  .gmDirective("gmSource", function($rootScope){
+  .gmDirective("gmData", function($rootScope){
     return {
       scope : true,
       priority:97,
       link : function( $scope, $el, $attrs){
-        console.log("first")
-        var tmp = $attrs['gmSource'].split("as").map(function(r){ return r.replace(/\s/g,"")})
+        var tmp = $attrs['gmData'].split("as").map(function(r){ return r.replace(/\s/g,"")})
         var data = (new Function( "return " + tmp[0] ))()
         var alias = tmp[1]
         $scope[alias] = data
         console.log( alias)
-        Object.observe( data, function(){
+        data.watch(function(){
           $scope.$digest()
         })
       }
