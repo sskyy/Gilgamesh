@@ -115,12 +115,9 @@ module.exports = D.bind( D.prototype )
 },{"./DataSource":6}],4:[function(require,module,exports){
 function DataArray(){
 
-  // use define property
-  this.length = 0
 }
 
 DataArray.prototype.set = function( array ){
-
 
 }
 
@@ -203,7 +200,6 @@ DataObject.prototype.delete = _.partial(DataObject.prototype.invokeDataSourceMet
 DataObject.prototype.publish = function( name){
   //return this.invokeDataSourceMethod("publish", this, name)
   var data = this.invokeDataSourceMethod("publish", this, name)
-  console.log("published data", data)
   return data
 }
 
@@ -373,13 +369,11 @@ DataSource.prototype.exec = function( action, params ){
 
 module.exports = DataSource
 },{"../libs/jquery-1.11.1.min.js":1,"../libs/lodash.min.js":2,"./DataArray":4,"./DataObject.js":5}],7:[function(require,module,exports){
-var $ = require("../libs/jquery-1.11.1.min.js")
 module.exports = function(id){
-  console.log("el", $("#"+id)[0])
-  return $("#"+id)[0]
+  return document.querySelector("#"+id)
 }
 
-},{"../libs/jquery-1.11.1.min.js":1}],8:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function( global ){
   global.D = require("./D.js")
   global.E = require("./Element.js")

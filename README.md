@@ -1,8 +1,13 @@
 # Gilgamesh
 
+Gilgamesh is a collection of useful plugins and extensions based on AngularJS( Polymer version is coming soon) to help you build modern web application.
+Run a local web server and browse to http://127.0.0.1/runner.html to see demo.
+
 ## Usage
 
 ### Data Source
+
+**Not fully implemented.**
 
 #### 1. Get a list
 
@@ -144,11 +149,11 @@ In some cases interaction between directives requires a lot of api or event, and
 
 #### 1. Expose api on element
 
-Api should be exposed on element, no self definded type allowed.
+Api should be exposed on element.
 
 #### 2. Use gm-src on the right element
 
-We provided various ways like role-based element import for cases require scope or method sharing, please use it instead of lifting scope.
+We provided various ways like role-based element import for cases require scope or method sharing, please use it instead of lifting angular scope.
 
 #### 3. Invoke callbacks and trigger event like build-in element
 
@@ -156,7 +161,7 @@ As title says, for example, implementing attribute `onSubmit` on a custom form w
 
 ### Demo
 
-This demo shows how to use a modal to wrapping a form.
+This demo shows you how to use a modal to wrap a form.
 
 **Directives**
 
