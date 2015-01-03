@@ -3,51 +3,76 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title></title>
-    <script src="./libs/jquery-1.11.1.min.js"></script>
-    <script src="./libs/angular.min.js"></script>
-    <script src="./libs/lodash.min.js"></script>
+    <!--<script src="libs/jquery-1.11.1.min.js"></script>-->
+    <script src="libs/angular.min.js"></script>
+    <script src="./adapter.js"></script>
+    <script src="./build/Gilgamesh.js"></script>
+    <style>
+        [user-card-form]{
+            padding: 10px;border: 1px cornflowerblue solid;margin: 10px;
+        }
+
+        h1,h2,h3,h4{
+            color : #2899ae;
+            border-bottom:1px #2899ae solid ;
+        }
+    </style>
 </head>
+
 <body>
+    <h1>1. Original Directive</h1>
+    <div id="userCard" user-card-form gm-data="D('user').new().publish('global.user') as user" ></div>
 
-
-    <div><button el-import="userCard" role="save" ng-click="user.save()">save for 1</button></div>
-
-    <div id="userCard" user-card-form gm-source="data('user','global.user') as user" style="padding: 10px;border: 1px cornflowerblue solid;margin: 10px;"></div>
-
-    <div id="userCard2" user-card-form  tpl-replace gm-source="data.get('user','global.user') as user" style="padding: 10px;border: 1px darkred solid;margin: 10px;">
+    <h1>2. Total overwrite</h1>
+    <div id="userCard2" user-card-form  gm-data="D('user').receive('global.user') as user" >
         name : <input type="text" ng-model="user.name">
         gender : <input type="text" ng-model="user.gender">
-        <button role="save" ng-click="user.save()">save also</button>
+        <button gm-role="save" ng-click="user.save()">save also</button>
         <div>saving : {{user.$$saving}}</div>
-        <div>{{user.name}}</div>
         <div>saved : {{user.$$saved}}</div>
     </div>
 
-    <div id="userCard3" user-card-form  tpl-replace="role" gm-source="data.get('user','global.user') as user" style="padding: 10px;border: 1px darkred solid;margin: 10px;">
-        <button role="save" ng-click="user.save()">only changed button</button>
+    <h1>3. Only change save button</h1>
+    <div id="userCard3" user-card-form  gm-tpl-partial gm-data="D('user').receive('global.user') as user">
+        <button gm-role="save" ng-click="user.save()">only changed button</button>
+    </div>
+
+    <h1>4. Only include status</h1>
+    <div id="userCard5" user-card-form  gm-tpl-include gm-data="D('user').receive('global.user') as user">
+        <div gm-role="status"></div>
     </div>
 
 
-    <button onClick="el('ecs-create-modal').open()">open modal</button>
+    <h1>5. Exclude save button in modal</h1>
+    <button onClick="E('ecs-create-modal').open()">open modal</button>
 
     <my-modal id="ecs-create-modal" style="border:1px cornflowerblue solid">
         <modal-body style="display: block;padding:10px">
-            <div id="userCard4" gm-source="data.get('user','global.user') as user" user-card-form tpl-replace="role" onSubmit="el('ecs-create-modal').hide()">
-                <div role="input"></div>
-            </div>
+            <div id="userCard4" gm-data="D('user').receive('global.user') as user" user-card-form gm-tpl-exclude="save" onSubmit="E('ecs-create-modal').hide()"></div>
         </modal-body>
         <modal-foot style="display: block">
-            <button type="submit" el-import="userCard4" role="save" ng-click="user.save()">save</button>
+            <button type="submit" gm-import="userCard4" gm-role="save" ng-click="user.save()">save</button>
         </modal-foot>
     </my-modal>
 
+    <h1>6. Import elements</h1>
+    <div>
+        <h2>6.1 Import button</h2>
+        <button gm-import="userCard" gm-role="save">save for 1</button>
 
+        <h2>6.2 Import scope</h2>
+        <div gm-import="userCard">saving:{{user.$$saving}}</div>
 
+        <h3>6.3 Import role</h3>
+        <div gm-import="userCard" gm-role="status"></div>
 
+        <h3>6.4 Import role with custom children</h3>
+        <div gm-import="userCard" gm-role="status">
+            <div>saving @  {{user.$$saving}}</div>
+            <div>saved @ {{user.$$saved}}</div>
+        </div>
+    </div>
 
-<script src="./src/Element.js"></script>
-<script src="./src/DataSource.js"></script>
-<script src="./adapter.js"></script>
 <script src="./directives.js"></script>
 <script src="./bootstrap.js"></script>
 </body>

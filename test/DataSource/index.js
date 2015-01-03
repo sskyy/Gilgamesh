@@ -45,9 +45,17 @@ describe("Get", function(){
     D("user",{
       query : function(  settings ){
         if( (new RegExp(idToGet+"$")).test( settings.url)  ){
-          return Promise.resolve(user)
+          return new Promise(function( resolve){
+            setTimeout(function(){
+              resolve(user)
+            },100)
+          })
         }else{
-          return Promise.resolve( userList)
+          return new Promise(function( resolve){
+            setTimeout(function(){
+              resolve(userList)
+            },100)
+          })
         }
       }
     })
@@ -63,8 +71,7 @@ describe("Get", function(){
   it("get a certain object", function( done ){
     var userObject = D("user").get(idToGet)
     assert.equal( userObject instanceof  DataObject, true )
-    userObject.watch("$$filled", function( filled ){
-      console.log( userObject,"filled" )
+    userObject.onStatus("$$filled", function( filled ){
       if( filled ){
         assert.equal( userObject.id, idToGet )
         //done()
@@ -72,8 +79,7 @@ describe("Get", function(){
     })
 
     var userObject2 = D("user").get({id:idToGet})
-    userObject2.watch("$$filled", function( filled ){
-      console.log( userObject2,"filled" )
+    userObject2.onStatus("$$filled", function( filled ){
       if( filled ){
         assert.equal( userObject2.id, idToGet )
         done()

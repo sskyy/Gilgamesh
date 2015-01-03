@@ -137,7 +137,7 @@ Magic here, We can break the fence of html structure. Surpose we need to place t
 
 In some cases interaction between directives requires a lot of api or event, and sharing scope would make it much easier. We cant still use `gm-import` to do that.
 
-	<div gm-import="newUser" gm-tpl-inject>{{user.name}}</div>
+	<div gm-import="newUser">{{user.name}}</div>
 	<div id="newUser" user-card-form gm-data="D('user').new() as user" ></div> 
 
 ### Conventions

@@ -1,15 +1,22 @@
-var _  = require("lodash")
+var _  = require("../libs/lodash.min.js")
 var DataObject  = require("./DataObject.js")
 var DataArray = require("./DataArray")
 var $ = require("../libs/jquery-1.11.1.min.js")
 
 function DataSource( name, def ){
+  var root = this
   _.extend( this, _.defaults( def, {
     url : {
       collection : "/" + name+"/{action}",
       single: "/" + name+"/{id}/{action}"
     },
-    pk : "id" //allow array
+    pk : "id", //allow array
+    publicDataSources : {},
+    dataSourceMethods : {
+      save : root.save.bind(root),
+      delete : root.delete.bind(root),
+      publish : root.publish.bind(root)
+    }
   }))
 }
 
@@ -53,57 +60,38 @@ DataSource.prototype.makeData = function( data ){
 }
 
 
-DataSource.prototype.setupInstanceMethod = function( instance ){
-  var root = this
-  _.forEach(["save","delete","validate"],function( method ){
-    instance[method] = root[method].bind(root,instance)
-  })
-  return instance
-}
-
 DataSource.prototype.save = function( instance ){
   var root = this
-  instance.$$saving = true
-  instance.$$saved = false
-  instance.notify()
-  this.query({
+  return this.query({
     url:root.makeUrl(instance),
     type: root.hasPrimaryKey(instance) ? "PUT" : "POST",
     data : root.makeData(instance)
-  }).then(function(){
-    instance.$$saved = true
-  }).finally(function(){
-    instance.$$saving = false
-    instance.notify()
   })
 }
 
 DataSource.prototype.delete = function( instance){
   var root = this
-  instance.$$deleting = true
-  instance.$$deleted = false
-  this.query({
+  return this.query({
     url:root.makeUrl(instance),
     type: "DELETE"
-  }).then(function(){
-    instance.$$deleted = true
-  }).finally(function(){
-    instance.$$deleting = false
-    instance.notify()
   })
 }
 
 DataSource.prototype.validate = function(instance){
-  instance.$$validating = false
-  instance.$$validated = true
+  //TODO use schema to do validate
   instance.notify()
+}
+
+DataSource.prototype.publish = function( instance, name ){
+  this.publicDataSources[name] = instance
+  return instance
 }
 
 DataSource.prototype.get = function( params ){
   params = params ? (_.isObject(params) ? params : _.zipObject([this.pk],[params]) ) : {}
-
   var root = this
-  var result = this.setupInstanceMethod( this.hasPrimaryKey(params) ? new DataObject : new DataArray )
+  var config = {methods:root.dataSourceMethods}
+  var result = this.hasPrimaryKey(params) ? new DataObject(config) : new DataArray(config)
 
   this.query( {url:this.makeUrl(params),type:"GET",data:this.makeQuery(params)} ).then(function( res ){
     result.set( root.parse( res ) )
@@ -113,15 +101,16 @@ DataSource.prototype.get = function( params ){
   return result
 }
 
-DataSource.prototype.publish = function( name ){
-
+DataSource.prototype.new = function(){
+  return new DataObject({methods:this.dataSourceMethods})
 }
+
 
 DataSource.prototype.receive = function(name){
-
+  return this.publicDataSources[name]
 }
 
-DataSource.prototype.exec = function( action ){
+DataSource.prototype.exec = function( action, params ){
 
 }
 

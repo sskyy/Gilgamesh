@@ -8,9 +8,9 @@ angular.module("Gilgamesh",[])
         var data = (new Function( "return " + tmp[0] ))()
         var alias = tmp[1]
         $scope[alias] = data
-        console.log( alias)
-        data.watch(function(){
-          $scope.$digest()
+        data.onStatus(function(){
+          console.log( $scope.status )
+          //$scope.$digest()
         })
       }
     }
@@ -20,17 +20,17 @@ angular.module("Gilgamesh",[])
       //require : "gmSource",
       priority : 98,
       template:
-      '<div role="input">'+
-      '    <input type="text" ng-model="user.name">'+
-      '    <input type="text" ng-model="user.gender">'+
+      '<div gm-role="input">'+
+      '    <input type="text" ng-model="user.name" placeholder="name">'+
+      '    <input type="text" ng-model="user.gender" placeholder="gender">'+
       '</div>'+
-      '    <button role="save" ng-click="user.save()">save</button>'+
-      '    <div>{{user.$$saving}}</div>'+
-      '    <div>{{user.name}}</div>'+
-      '    <div>{{user.$$saved}}</div>',
+      '    <button gm-role="save" ng-click="user.save()">save</button>'+
+      '    <div gm-role="status">'+
+      '       <div>saving:{{user.$$saving}}</div>'+
+      '       <div>saved:{{user.$$saved}}</div>'+
+      '    </div>',
       link : function( $scope, $el, $attrs){
-        console.log("watch $$saved")
-          $scope.user.watch("$$saved", function( saved ){
+          $scope.user.onStatus("$$saved", function( saved ){
             if( saved ){
               try{
                 if($el.attr('onSubmit') ) (new Function( $el.attr('onSubmit')))()
@@ -53,21 +53,17 @@ angular.module("Gilgamesh",[])
           width : "400px",
           position : "absolute",
           margin : "100px auto 0 auto",
-          background : "#eee"
+          background : "#eee",
+          display : "none"
         })
-        //$el.hide()
-
-
 
         $el[0].open = function(){
-          $el.show()
+          $el.css("display","block")
         }
-
-
 
         $el[0].hide = function(){
           console.log("closing")
-          $el.hide()
+          $el.css("display","none")
         }
       }
     }
