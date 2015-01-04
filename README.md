@@ -3,18 +3,22 @@
 Gilgamesh is a collection of useful plugins and extensions based on AngularJS( Polymer version is coming soon) to help you build modern web application.
 Run a local web server and browse to http://127.0.0.1/runner.html to see demo.
 
-## Usage
+## 1. Architecture
 
-### Data Source
+<img alt="Architecture" src="./docs/pics/Architecture.svg" width="100%">
 
-#### 1. Get a list
+## 2. Usage
+
+### 2.1 Data Source
+
+#### 2.1.1 Get a list
 
 ```
 D("user").get()                    //get user list
 D("user").get({name:"Gilgamesh"})  //get user list with parameters
 ```
 
-#### 2. Get a certain object
+#### 2.1.2 Get a certain object
 
 ```
 //id can be replace by any name you defined as primary key
@@ -22,7 +26,7 @@ D("user").get({id:1})
 D("user").get(1) 
 ```
 
-#### 3. Create a new object and save it
+#### 2.1.3 Create a new object and save it
 
 ```
 var newUser = D("user").new()
@@ -30,14 +34,14 @@ newUser.name = "me"
 newUser.save()
 ```
 
-#### 4. Publish data with a name
+#### 2.1.4 Publish data with a name
 
 ```
 D("user").get(id).publish("global.user")
 D("user").receive("global.user")
 ```
 
-#### 5. Available data status and methods
+#### 2.1.5 Available data status and methods
 
 ```
 $$filled    //is data filled from ajax data
@@ -59,9 +63,9 @@ $$saved
 .notify()						//manualy call watch callbacks
 ```
 
-### Element
+### 2.2 Element
 
-#### 1. Use it with Data Source
+#### 2.2.1 Use it with Data Source
 
 
 	<div gm-data="D('user').get(1) as user">
@@ -70,7 +74,7 @@ $$saved
 		<button ng-click="user.save()">save</button>
 	</div>
 
-#### 2. Use template overwrite
+#### 2.2.2 Use template overwrite
 
 First, use `gmDirective` instead of `directive`:
 
@@ -114,7 +118,7 @@ Secondly, overwrite template with child element:
         <div>saved : {{user.$$saved}}</div>
     </div>
 
-#### 3. Overwrite part of template
+#### 2.2.3 Overwrite part of template
 
 As you may notice that a extra attribute `gm-role` was added to child element of directive `user-card-form`. We can do partial overwriting with `gm-tpl` set to `include`:
 
@@ -127,7 +131,7 @@ What if you only want to exclude certain part? For instance, We can exlude the s
 
 	<div user-card-form gm-tpl-exclude="save" gm-data="D('user').new() as user" ></div>
 
-#### 4. Import child element from a directive
+#### 2.2.4 Import child element from a directive
 
 Magic here, We can break the fence of html structure. Surpose we need to place the save button outside the `user-card-form` due to some insane reason, we simply do:
 
@@ -136,30 +140,30 @@ Magic here, We can break the fence of html structure. Surpose we need to place t
 
 `gm-import` is used to specify the id of which element you want to import from, and  `gm-role` is used to identify the import part.
 
-#### 5. Import directive's scope
+#### 2.2.5 Import directive's scope
 
 In some cases interaction between directives requires a lot of api or event, and sharing scope would make it much easier. We cant still use `gm-import` to do that.
 
 	<div gm-import="newUser">{{user.name}}</div>
 	<div id="newUser" user-card-form gm-data="D('user').new() as user" ></div> 
 
-### Conventions
+## 3. Conventions
 
-#### 1. Expose api on element
+### 3.1 Expose api on element
 
 Api should be exposed on element.
 
-#### 2. Use gm-src on the right element
+### 3.2 Use gm-src on the right element
 
 We provided various ways like role-based element import for cases require scope or method sharing, please use it instead of lifting angular scope.
 
-#### 3. Invoke callbacks and trigger event like build-in element
+### 3.3 Invoke callbacks and trigger event like build-in element
 
 As title says, for example, implementing attribute `onSubmit` on a custom form would be the right way to invoke callback.
 
-### Demo
+## 4. Demo
 
-This demo shows you how to use a modal to wrap a form.
+### 4.1 How to use a modal to wrap a form.
 
 **Directives**
 
@@ -218,8 +222,12 @@ This demo shows you how to use a modal to wrap a form.
 	    
     </my-modal>
 
-## Todo
+### 4.2 A custom element explaining `gm-import`
 
-  - [] Polymer support
-  - [] React support
-  - [] Event system
+  <img alt="Architecture" src="./docs/pics/Explain-gm-import.svg" width="100%">
+
+## 5. Todo
+
+  - [ ] Polymer support
+  - [ ] React support
+  - [ ] Event system

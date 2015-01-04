@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1557px" height="505px" viewBox="0 0 1557 505" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch Beta 3.2.2 (9983) - http://www.bohemiancoding.com/sketch -->
+    <title>Architecture</title>
+    <desc>Created with Sketch Beta.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="Architecture" sketch:type="MSLayerGroup" transform="translate(0.000000, -3.000000)">
+            <g id="dc-+-Data-Source" transform="translate(0.000000, 112.000000)">
+                <rect id="dc" fill="#4990E2" sketch:type="MSShapeGroup" x="0" y="0" width="138" height="74"></rect>
+                <text id="Data-Source" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#FFFFFF">
+                    <tspan x="29" y="41">Data Source</tspan>
+                </text>
+            </g>
+            <g id="dc-2-+-dc-3" transform="translate(4.000000, 0.000000)">
+                <rect id="dc-2" fill="#F6A623" sketch:type="MSShapeGroup" x="19" y="26" width="9" height="74"></rect>
+                <text id="pooling" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                    <tspan x="0" y="14">pooling</tspan>
+                </text>
+                <text id="websocket" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                    <tspan x="65" y="14">websocket</tspan>
+                </text>
+                <rect id="dc-3" fill="#F6A623" sketch:type="MSShapeGroup" x="97" y="26" width="9" height="74"></rect>
+            </g>
+            <g id="Group" transform="translate(47.000000, 107.000000)">
+                <rect id="Rectangle-4" fill="#4990E2" sketch:type="MSShapeGroup" x="0" y="104" width="40" height="31"></rect>
+                <rect id="Rectangle-5" fill="#4990E2" sketch:type="MSShapeGroup" x="0" y="161" width="40" height="31"></rect>
+                <text id="options" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                    <tspan x="105" y="14">options</tspan>
+                    <tspan x="105" y="31"> - url</tspan>
+                    <tspan x="105" y="48"> - id</tspan>
+                    <tspan x="105" y="65"> - params</tspan>
+                    <tspan x="105" y="82"> - refresh</tspan>
+                </text>
+                <text id="DataArray" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                    <tspan x="65" y="126">DataArray</tspan>
+                </text>
+                <text id="DataObject" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                    <tspan x="65" y="181">DataObject</tspan>
+                </text>
+                <text id="properties" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                    <tspan x="164" y="180">properties</tspan>
+                    <tspan x="164" y="197"> - id(primary key)</tspan>
+                    <tspan x="164" y="214"> - $$valid</tspan>
+                    <tspan x="164" y="231"> - $$dirty</tspan>
+                    <tspan x="164" y="248"> - $$empty</tspan>
+                    <tspan x="164" y="265"> - $$validating</tspan>
+                    <tspan x="164" y="282"> - $$saving</tspan>
+                    <tspan x="164" y="299"> - $$saved</tspan>
+                </text>
+                <text id="methods" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                    <tspan x="164" y="330">methods</tspan>
+                    <tspan x="164" y="347"> - validate()</tspan>
+                    <tspan x="164" y="364"> - save()</tspan>
+                    <tspan x="164" y="381"> - delete()</tspan>
+                    <tspan x="164" y="398"> - watch()</tspan>
+                </text>
+            </g>
+            <text id="usage" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                <tspan x="546" y="117">usage</tspan>
+                <tspan x="546" y="134"> - D(‘user’)                                                         //define data source</tspan>
+                <tspan x="546" y="151"> - D(‘user’).get({id:1})                                       //get data from data source</tspan>
+                <tspan x="546" y="168"> - D(‘user’).get({id:1}).publish(‘global.user’)  //publish data</tspan>
+                <tspan x="546" y="185"> - D(‘user’).receive(‘global.user’)                    //use published data</tspan>
+            </text>
+            <rect id="Rectangle-6" fill="#7ED321" sketch:type="MSShapeGroup" x="459" y="124" width="56" height="38"></rect>
+            <g id="Line-+-Line-3-+-Line-2" transform="translate(240.000000, 140.000000)" stroke="#623711" stroke-linecap="square">
+                <path d="M184.5,1.5 L1.5,1.5" id="Line" sketch:type="MSShapeGroup"></path>
+                <path id="Line-decoration-1" d="M1.5,1.5 C5.28,2.55 8.52,3.45 12.3,4.5 C12.3,2.4 12.3,0.6 12.3,-1.5 C8.52,-0.45 5.28,0.45 1.5,1.5 C1.5,1.5 1.5,1.5 1.5,1.5 Z"></path>
+                <path d="M12.5,117.5 L184.5,12.5" id="Line-3" sketch:type="MSShapeGroup"></path>
+                <path id="Line-3-decoration-1" d="M184.058941,12.7692511 C180.285508,13.842611 177.051136,14.7626338 173.277703,15.8359937 C174.371905,17.6284006 175.309792,19.1647493 176.403994,20.9571562 C179.083226,18.0913894 181.37971,15.6350179 184.058941,12.7692511 C184.058941,12.7692511 184.058941,12.7692511 184.058941,12.7692511 Z"></path>
+                <path d="M1.5,15.5 L1.5,121.5" id="Line-2" sketch:type="MSShapeGroup"></path>
+                <path id="Line-2-decoration-1" d="M1.5,121.5 C2.55,117.72 3.45,114.48 4.5,110.7 C2.4,110.7 0.6,110.7 -1.5,110.7 C-0.45,114.48 0.45,117.72 1.5,121.5 C1.5,121.5 1.5,121.5 1.5,121.5 Z"></path>
+            </g>
+            <rect id="dc-4" fill="#F6A623" sketch:type="MSShapeGroup" x="483" y="171" width="9" height="74"></rect>
+            <text id="two-way-binding" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                <tspan x="500" y="212">two way binding</tspan>
+            </text>
+            <g id="Rectangle-7-+-Element" transform="translate(459.000000, 254.000000)">
+                <rect id="Rectangle-7" fill="#C41099" sketch:type="MSShapeGroup" x="0" y="4" width="146" height="76"></rect>
+                <text id="usage" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                    <tspan x="290" y="14">usage</tspan>
+                    <tspan x="290" y="31"> - &lt;my-el id=‘el1’ gm-data=“D(‘user’).get()”&gt;                                                                    //bind data from data source</tspan>
+                    <tspan x="290" y="48"> - &lt;my-el&gt;&lt;button gm-role=‘delete’&gt;delete&lt;/button&gt;&lt;/my-el&gt;                                        //define element role</tspan>
+                    <tspan x="290" y="65"> - &lt;other-el&gt;&lt;button gm-import=‘ele1’ gm-role=‘delete’&gt;delete&lt;/button&gt;&lt;/other-el&gt;   //import child element from a directive</tspan>
+                    <tspan x="290" y="82"> - &lt;other-el onClick=‘E(el1).open()’&gt;&lt;/other-el&gt; 	                                                        //call custom element API</tspan>
+                </text>
+                <g id="Rectangle-8-+-custom-element" transform="translate(56.000000, 100.000000)">
+                    <rect id="Rectangle-8" fill="#C41099" sketch:type="MSShapeGroup" x="0" y="0" width="36" height="26"></rect>
+                    <text id="custom-element" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                        <tspan x="54" y="18">custom element</tspan>
+                    </text>
+                    <text id="concept" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                        <tspan x="236" y="17">concept</tspan>
+                        <tspan x="236" y="34"> - webcomponents with bindings</tspan>
+                        <tspan x="236" y="51"> - template convention</tspan>
+                        <tspan x="236" y="68"> - event binding</tspan>
+                    </text>
+                </g>
+                <g id="Rectangle-9-+-custom-attribute" transform="translate(56.000000, 190.000000)">
+                    <rect id="Rectangle-9" fill="#C41099" sketch:type="MSShapeGroup" x="0" y="0" width="36" height="26"></rect>
+                    <text id="custom-attribute" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                        <tspan x="54" y="16">custom attribute</tspan>
+                    </text>
+                </g>
+                <text id="concept" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#8D8D8D">
+                    <tspan x="293" y="206">concept</tspan>
+                    <tspan x="293" y="223"> - directive with less coplexity</tspan>
+                </text>
+                <text id="Element" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#FFFFFF">
+                    <tspan x="47" y="45">Element</tspan>
+                </text>
+            </g>
+            <g id="Line-+-Line-5-+-Line-4" transform="translate(227.000000, 17.000000)" stroke="#D0011B" fill="#D0011B" stroke-linecap="square" stroke-dasharray="4">
+                <path d="M1.5,0.357142857 L1.5,74.6428571" id="Line" sketch:type="MSShapeGroup"></path>
+                <path id="Line-decoration-1" d="M1.5,74.3571429 C2.55,70.5771429 3.45,67.3371429 4.5,63.5571429 C2.4,63.5571429 0.6,63.5571429 -1.5,63.5571429 C-0.45,67.3371429 0.45,70.5771429 1.5,74.3571429 C1.5,74.3571429 1.5,74.3571429 1.5,74.3571429 Z"></path>
+                <path d="M213.5,123.690476 L213.5,267.309524" id="Line-5" sketch:type="MSShapeGroup"></path>
+                <path id="Line-5-decoration-1" d="M213.5,266.690476 C214.55,262.910476 215.45,259.670476 216.5,255.890476 C214.4,255.890476 212.6,255.890476 210.5,255.890476 C211.55,259.670476 212.45,262.910476 213.5,266.690476 C213.5,266.690476 213.5,266.690476 213.5,266.690476 Z"></path>
+                <path d="M23.5,100.5 L193.5,101.5" id="Line-4" sketch:type="MSShapeGroup"></path>
+                <path id="Line-4-decoration-1" d="M193.497059,101.499983 C189.723301,100.427766 186.488651,99.508723 182.714892,98.4365063 C182.70254,100.53647 182.691952,102.336439 182.679599,104.436402 C186.46571,103.408656 189.710948,102.52773 193.497059,101.499983 C193.497059,101.499983 193.497059,101.499983 193.497059,101.499983 Z"></path>
+            </g>
+            <text id="data-flow" sketch:type="MSTextLayer" font-family="Helvetica" font-size="14" font-weight="bold" fill="#D0011B">
+                <tspan x="236" y="30">data flow</tspan>
+            </text>
+        </g>
+    </g>
+</svg>
