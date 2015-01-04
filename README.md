@@ -217,3 +217,9 @@ This demo shows you how to use a modal to wrap a form.
 	    </modal-foot>
 	    
     </my-modal>
+
+## Todo
+
+  - [] Polymer support
+  - [] React support
+  - [] Event system
