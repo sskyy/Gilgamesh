@@ -1,11 +1,11 @@
 # Gilgamesh
 
 Gilgamesh is a collection of useful plugins and extensions based on AngularJS( Polymer version is coming soon) to help you build modern web application.
-Run a local web server and browse to http://127.0.0.1/runner.html to see demo.
+Run a local web server and browse to http://127.0.0.1/runner-angular.html to see demo.
 
 ## 1. Architecture
 
-<img alt="Architecture" src="./docs/pics/Architecture.svg" width="100%">
+<img alt="Architecture" src="./docs/pics/Architecture.png" width="100%">
 
 ## 2. Usage
 
@@ -224,7 +224,7 @@ As title says, for example, implementing attribute `onSubmit` on a custom form w
 
 ### 4.2 A custom element explaining `gm-import`
 
-  <img alt="Architecture" src="./docs/pics/Explain-gm-import.svg" width="100%">
+  <img alt="Architecture" src="./docs/pics/Explain-gm-import.png" width="100%">
 
 ## 5. Todo
 
