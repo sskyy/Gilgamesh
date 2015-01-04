@@ -51,7 +51,6 @@ DataObject.prototype.invokeDataSourceMethod = function( method ){
   return this.$$config.methods[method].apply( null, args)
 }
 
-//need to be implemented
 DataObject.prototype.invokeDataSourceMethodWithStatus = function( method, currentStatus, pastStatus){
   var root = this
   root.changePropAndNotify(currentStatus,true)
@@ -111,6 +110,7 @@ DataObject.prototype.notify = function(){
 DataObject.prototype.dispatchChange = function( change, prop){
   var root = this
   prop = prop || change.name
+
 
   root.$$watchers[prop] && root.$$watchers[prop].forEach(function( handler ) {
     handler( root[prop], change.oldValue)

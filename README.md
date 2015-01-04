@@ -7,8 +7,6 @@ Run a local web server and browse to http://127.0.0.1/runner.html to see demo.
 
 ### Data Source
 
-**Not fully implemented.**
-
 #### 1. Get a list
 
 ```

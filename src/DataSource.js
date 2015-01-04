@@ -91,10 +91,10 @@ DataSource.prototype.get = function( params ){
   params = params ? (_.isObject(params) ? params : _.zipObject([this.pk],[params]) ) : {}
   var root = this
   var config = {methods:root.dataSourceMethods}
-  var result = this.hasPrimaryKey(params) ? new DataObject(config) : new DataArray(config)
+  var result = this.hasPrimaryKey(params) ? new DataObject(config) : new DataArray(config, params)
 
   this.query( {url:this.makeUrl(params),type:"GET",data:this.makeQuery(params)} ).then(function( res ){
-    result.set( root.parse( res ) )
+    result.set( root.parse( res, root.hasPrimaryKey(params) ) )
     result.notify()
   })
 

@@ -32,14 +32,16 @@ describe("Define", function(){
 })
 
 
-describe("Get", function(){
+describe("Get Object", function(){
   //overwrite get method to mock request
   var idToGet = 1
-  var user = {
+  var userList = [{
     id : idToGet,
     name : "Gilgamesh"
-  }
-  var userList = [user]
+  },{
+    id: idToGet+1,
+    name : "Enkidu"
+  }]
 
   beforeEach(function(){
     D("user",{
@@ -47,7 +49,7 @@ describe("Get", function(){
         if( (new RegExp(idToGet+"$")).test( settings.url)  ){
           return new Promise(function( resolve){
             setTimeout(function(){
-              resolve(user)
+              resolve(userList[0])
             },100)
           })
         }else{
@@ -62,11 +64,39 @@ describe("Get", function(){
   })
 
 
-  it("get a list",function(){
-    var userList = D("user").get()
-    assert.equal( userList instanceof  DataArray, true )
-    assert.notEqual( userList.length , undefined )
+
+  it("get a list",function( done){
+    var getUserList = D("user").get()
+
+    assert.equal( getUserList instanceof  DataArray, true )
+    getUserList.onStatus("$$filled",function( filled){
+      if( filled){
+        assert.equal( getUserList.length , userList.length )
+        assert.equal( getUserList[0] instanceof DataObject, true )
+        done()
+      }
+    })
   })
+
+  it("apply array method on list", function(done){
+    var getUserList = D("user").get()
+
+    assert.equal( getUserList instanceof  DataArray, true )
+    getUserList.onStatus("$$filled",function( filled){
+      if( filled){
+        //push
+        var originLength = getUserList.length
+        getUserList.push({id:3,name:"Arthur"})
+        assert.equal( getUserList.length , originLength + 1 )
+        assert.equal( getUserList[getUserList.length-1 ] instanceof  DataObject,true)
+        //pop
+        getUserList.pop()
+        assert.equal( getUserList.length , originLength )
+        done()
+      }
+    })
+  })
+
 
   it("get a certain object", function( done ){
     var userObject = D("user").get(idToGet)
@@ -89,6 +119,7 @@ describe("Get", function(){
 
   //TODO use custom primary key to get
 })
+
 
 describe("Save & Delete & Validate & Watch", function(){
 
