@@ -7,7 +7,7 @@ function DataObject( config ){
     root.definePrivateProp(key, false)
   })
 
-  _.forEach(["$$watchers","$$changes"],function(key){
+  _.forEach(["$$watchers","$$changes","$$actions"],function(key){
     root.definePrivateProp(key, {})
   })
 

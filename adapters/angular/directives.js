@@ -1,4 +1,8 @@
 angular.module("Gilgamesh",[])
+  .run(function($rootScope){
+    $rootScope.D = D
+    $rootScope.E = E
+  })
   .gmDirective("gmData", function($rootScope){
     return {
       scope : true,
@@ -19,16 +23,7 @@ angular.module("Gilgamesh",[])
     return {
       //require : "gmSource",
       priority : 98,
-      template:
-      '<div gm-role="input">'+
-      '    <input type="text" ng-model="user.name" placeholder="name">'+
-      '    <input type="text" ng-model="user.gender" placeholder="gender">'+
-      '</div>'+
-      '    <button gm-role="save" ng-click="user.save()">save</button>'+
-      '    <div gm-role="status">'+
-      '       <div>saving:{{user.$$saving}}</div>'+
-      '       <div>saved:{{user.$$saved}}</div>'+
-      '    </div>',
+      templateUrl: "/adapters/angular/user-card-form.html",
       link : function( $scope, $el, $attrs){
           $scope.user.onStatus("$$saved", function( saved ){
             if( saved ){

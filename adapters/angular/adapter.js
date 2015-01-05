@@ -28,6 +28,7 @@
     module.gmDirective = function(name, directiveDef){
       var directiveDefArgs = annotate( directiveDef )
 
+
       function replaceEmptyInnerHTML( $target, $source ){
         if( isEmptyInnerHTML($target) ){
           $target.innerHTML =  $source.innerHTML
@@ -49,89 +50,112 @@
         parent.replaceChild( toReplace, target)
       }
 
+      function removeElement( el ){
+        el.parentNode.removeChild(el)
+      }
+
+      function replaceInnerHTML( toReplace, target){
+        target.innerHTML = toReplace.innerHTML
+      }
+
       var replacedDirectiveDef = function(){
         var directive =  directiveDef.apply( directiveDef, arguments)
-        if( !directive.scope ) directive.scope = true
 
         if( directive.compile ) throw new Error("you cannot wrap a directive with compile")
         if( directive.transclude ) throw new Error("you cannot wrap a directive with transclude")
 
-        directive._template = directive.template
-        delete directive.template
+        if( !directive.scope ) directive.scope = true
 
+        var cacheId = -1
+        var originElementCache = {}
+        var cacheAttribute = "gm-child-cache-id"
+
+        //TODO add tag name support
+        angular.forEach( document.querySelectorAll("["+name.replace(/([A-Z])/g,"-$1").toLowerCase()+"]"), function( el ){
+          if( el.getAttribute(cacheAttribute) !== null ) return
+          ++cacheId
+          originElementCache[cacheId] = el.cloneNode(true)
+          el.setAttribute(cacheAttribute,cacheId)
+        })
 
         directive.compile = function( $el ){
+
           var compilingImportEls = []
 
+          //should only compile once and only compile with the one that has template
+          if( (directive.template || directive.templateUrl) && $el[0].getAttribute("gm-compiled") === null ) {
 
-          //should only compile once and only compile with the has template
-          if( directive._template && $el[0].getAttribute("gm-compiled") ===null) {
-            var clonedEl = $el[0].cloneNode(true)
-            var _templateHolder = angular.element("<div>"+directive._template+"</div>")[0]
+            var originEl = originElementCache[$el[0].getAttribute(cacheAttribute)]
+            var compileElClone = $el[0].cloneNode(true)
+            var totalOverwrite = !isEmptyInnerHTML(originEl)
 
-
-            if( isEmptyInnerHTML(clonedEl) ) {
-              clonedEl.innerHTML = directive._template
-            }
-
-            if( clonedEl.getAttribute("gm-tpl-include") !==null ){
-              angular.forEach( clonedEl.childNodes, function( childEl){
+            //only include particular child element
+            if( originEl.getAttribute("gm-tpl-include") !== null ){
+              totalOverwrite = false
+              angular.forEach( originEl.childNodes, function( childEl ){
                 if( !childEl.getAttribute ) return
-                var roleEl = _templateHolder.querySelector("[gm-role="+ childEl.getAttribute("gm-role")+"]")
+                var roleEl = $el[0].querySelector("[gm-role="+ childEl.getAttribute("gm-role")+"]")
                 if( roleEl ){
-                  replaceSourceInnerHTML(roleEl, childEl)
-                  replaceWith( roleEl, childEl)
+                  replaceEmptyInnerHTML(childEl,roleEl )
                 }
+                $el[0].innerHTML = originEl.innerHTML
               })
             }
 
-
-            if( clonedEl.getAttribute('gm-tpl-partial') !==null ){
-              //only overwrite particular element
-              var $children = $el.children().remove()
-              clonedEl.innerHTML = directive._template
-
-              angular.forEach($children,function(roleEl){
+            //only overwrite particular element
+            if( originEl.getAttribute('gm-tpl-partial') !==null ){
+              totalOverwrite = false
+              angular.forEach(originEl.childNodes,function(roleEl){
+                //exclude text, comment and other node type
+                if( !roleEl.getAttribute ) return
                 var role = roleEl.getAttribute("gm-role")
 
-                angular.forEach(clonedEl.querySelectorAll("[gm-role="+role+"]"),function( targetEl){
+                angular.forEach($el[0].querySelectorAll("[gm-role="+role+"]"),function( targetEl){
                   replaceEmptyInnerHTML( roleEl, targetEl)
                   replaceWith( roleEl, targetEl)
                 })
               })
             }
-            //
-            //
-            if( clonedEl.getAttribute('gm-tpl-exclude') !==null ){
-              clonedEl.getAttribute('gm-tpl-exclude').split(",").forEach(function( roleToExclude){
-                angular.element(clonedEl.querySelector("[gm-role="+roleToExclude+"]")).remove()
+
+            if( originEl.getAttribute('gm-tpl-exclude') !==null ){
+              totalOverwrite = false
+              $el[0].getAttribute('gm-tpl-exclude').split(",").forEach(function( roleToExclude){
+                removeElement($el[0].querySelector("[gm-role="+roleToExclude+"]"))
               })
             }
 
+            if( totalOverwrite ){
+              $el[0].innerHTML = originEl.innerHTML
+            }
+
             //handle import with gm-tpl-inject   and handle import with gm-role
-            var id = clonedEl.getAttribute("id")
+            var id = originEl.getAttribute("id")
             angular.forEach(document.querySelectorAll("[gm-import="+id+"]"),function(importEl){
               var tobeCompiledCloneEl
               var roleEl
 
               if( importEl.getAttribute("gm-role")!==null ){
-                roleEl = angular.element("<div>"+directive._template+"</div>")[0].querySelector("[gm-role="+ importEl.getAttribute("gm-role")+"]")
+                roleEl = compileElClone.querySelector("[gm-role="+ importEl.getAttribute("gm-role")+"]")
                 if( roleEl ){
                   tobeCompiledCloneEl = roleEl.cloneNode(true)
                   replaceSourceInnerHTML(tobeCompiledCloneEl, roleEl)
                   tobeCompiledCloneEl.setAttribute("gm-import",id)
+                }else{
+                  console.log("no such role", importEl.getAttribute("gm-role"),"in element", $el[0])
                 }
 
               }else{
                 tobeCompiledCloneEl = importEl.cloneNode(true)
               }
+              console.log( tobeCompiledCloneEl)
 
-              clonedEl.appendChild( tobeCompiledCloneEl )
+              $el[0].appendChild( tobeCompiledCloneEl )
               compilingImportEls.push([ importEl, tobeCompiledCloneEl ])
             })
 
-            clonedEl.getAttribute("gm-compiled",true)
-            replaceWith(clonedEl, $el[0])
+
+
+            $el[0].getAttribute("gm-compiled",true)
           }
 
           return function( scope, ele, attrs){
