@@ -3,35 +3,11 @@ var assert = require("assert")
 var DataArray = require("../../src/DataArray.js")
 var DataObject = require("../../src/DataObject.js")
 var Promise = require("bluebird")
+var _= require("lodash")
 
-describe("Define", function(){
-  it( "auto definition",function(){
-    var autoCol = "post"
-    var autoDef = D(autoCol,{})
-    assert.equal( autoDef.url.collection,  "/"+autoCol+"/{action}" )
-    assert.equal( autoDef.url.single,  "/"+autoCol+"/{id}/{action}" )
-  })
-
-  it("custom definition",function(){
-    var customCol = "user"
-    var customAttr = {
-      url : {
-        collection : "/prefix/user/{action}",
-        single : "/prefix/user/{id}/suffix/{action}"
-      }
-    }
-    var customDef = D(customCol,customAttr)
-
-
-    assert.equal( customDef.url.collection,  customAttr.url.collection )
-    assert.equal( customDef.url.single,  customAttr.url.single )
-  })
-
-  //TODO custom primary key
-
-})
-
-
+/**
+ * GET
+ */
 describe("Get Object", function(){
   //overwrite get method to mock request
   var idToGet = 1
@@ -92,6 +68,13 @@ describe("Get Object", function(){
         //pop
         getUserList.pop()
         assert.equal( getUserList.length , originLength )
+
+        //filter
+        var slice1 = getUserList.filter("id",idToGet)
+        assert.equal( slice1 instanceof DataArray, true)
+        assert.equal( slice1.length, 1)
+        assert.equal( slice1[0] instanceof DataObject,true)
+        assert.equal( slice1[0].id, idToGet)
         done()
       }
     })
@@ -116,23 +99,5 @@ describe("Get Object", function(){
       }
     })
   })
-
-  //TODO use custom primary key to get
 })
 
-
-describe("Save & Delete & Validate & Watch", function(){
-
-})
-
-describe("Actions", function(){
-
-})
-
-describe("Status", function(){
-
-})
-
-describe("Hooks", function(){
-
-})

@@ -47,7 +47,7 @@ DataObject.prototype.invokeDataSourceMethod = function( method ){
   var args = _.toArray(arguments).slice(1)
   if( !this.$$config.methods || !this.$$config.methods[method] ) return  console.log( "DataSource method", method, "not passed in")
 
-  //DataSource method has already bind this to DataSource, so don't worry about `this`
+  //DataSource method has already bind this to DataSource, so don't worry about `this` set to null.
   return this.$$config.methods[method].apply( null, args)
 }
 
@@ -74,6 +74,17 @@ DataObject.prototype.publish = function( name){
 }
 
 
+DataObject.prototype.action = function( action ){
+  var root = this
+  return function( params ){
+    root.$$actions[action] = "executing"
+    return root.invokeDataSourceMethod("action", action)(root, params).then(function(){
+      root.$$actions[action] = "completed"
+    })
+  }
+}
+
+
 /*
  * status watchers
  */
@@ -84,6 +95,8 @@ DataObject.prototype.watch = function( name, handler ){
   }
   this.$$watchers[name] ?  this.$$watchers[name].push(handler) : (this.$$watchers[name] = [handler])
 }
+
+//TODO unwatch
 
 //make it readable for status
 DataObject.prototype.onStatus = DataObject.prototype.watch

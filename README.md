@@ -52,6 +52,7 @@ $$validating
 $$validated
 $$saving
 $$saved
+$$actions   //map of current action status. example: {"saving":false,"saved":"true","deleting":true}
 ```
 
 ```
@@ -62,6 +63,42 @@ $$saved
 .watch(callback)				//watch object
 .notify()						//manualy call watch callbacks
 ```
+
+#### 2.1.6 Execute actions
+
+Actions will generate `PUT` http request with url "/{id}/{action}". Example:
+
+```
+D("user").get(id).action("doSomething")({/*parameters*/})
+```
+
+Batch Actions example:
+```
+D("user").get({name:"Gilgamesh"}.action("batchAction")(params).
+
+D("user").get({name:"Gilgamesh"}.filter("id",[ids]).action("batchAction")(params).
+
+//or you can use it via DataSource directly. The difference is that actions on
+//collection will change the status of current collection.
+D("user").action("batchAction")(params)
+```
+
+#### 2.1.7 Overwrite an action
+
+```
+D("user").action("doSomething",function( instanceOrCollections, params, dataSource ){
+    //return setting to overwrite default ajax settings
+    return {
+        url : "/url",
+        method : "POST",
+        data : {}
+        success : function( res ){
+            dataSource.parse(res)
+        }
+    }
+})
+```
+
 
 ### 2.2 Element
 

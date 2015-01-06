@@ -5,7 +5,7 @@ var $ = require("../libs/jquery-1.11.1.min.js")
 
 function DataSource( name, def ){
   var root = this
-  _.extend( this, _.defaults( def, {
+  _.extend( this, _.merge({
     url : {
       collection : "/" + name+"/{action}",
       single: "/" + name+"/{id}/{action}"
@@ -15,9 +15,11 @@ function DataSource( name, def ){
     dataSourceMethods : {
       save : root.save.bind(root),
       delete : root.delete.bind(root),
-      publish : root.publish.bind(root)
-    }
-  }))
+      publish : root.publish.bind(root),
+      action : root.action.bind(root)
+    },
+    actions : {}
+  },def))
 }
 
 DataSource.prototype.query = function( settings ){
@@ -95,7 +97,6 @@ DataSource.prototype.get = function( params ){
 
   this.query( {url:this.makeUrl(params),type:"GET",data:this.makeQuery(params)} ).then(function( res ){
     result.set( root.parse( res, root.hasPrimaryKey(params) ) )
-    result.notify()
   })
 
   return result
@@ -110,8 +111,31 @@ DataSource.prototype.receive = function(name){
   return this.publicDataSources[name]
 }
 
-DataSource.prototype.exec = function( action, params ){
+DataSource.prototype.generateAction = function( action ){
+  var root = this
+  return function( instanceOrCollections, params ){
+    var def = _.isFunction(root.actions[action]) ?
+      root.actions[action](instanceOrCollections,params,root) :
+        _.isObject( root.actions[action] ) ?
+          root.actions[action] :  {}
 
+
+    var isBatch = instanceOrCollections instanceof DataArray
+
+    return root.query(_.defaults( def , {
+      url : root.interpolate(root.url[isBatch?"collection":"single"] ,{id:instanceOrCollections.id,action:action}),
+      method : "PUT",
+      data : _.extend( isBatch? _.zipObject([root.pk, instanceOrCollections.pluck("id") ]):{}, params)
+    }))
+  }
+}
+
+DataSource.prototype.action = function( action, defFn ){
+  if( defFn ){
+    this.actions[action] = defFn
+  }else{
+    return this.generateAction(action).bind(this)
+  }
 }
 
 module.exports = DataSource

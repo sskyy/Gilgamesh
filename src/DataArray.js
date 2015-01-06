@@ -7,7 +7,7 @@ function DataArray(config, context){
     root.definePrivateProp(key, false)
   })
 
-  _.forEach(["$$watchers","$$changes"],function(key){
+  _.forEach(["$$watchers","$$changes","$$actions"],function(key){
     root.definePrivateProp(key, {})
   })
 
@@ -20,6 +20,9 @@ function DataArray(config, context){
     globalWatcherName : "/"
   }))
 
+  root.definePrivateProp("$$unFilledSlices",[])
+
+  root.definePrivateProp("$$context", context)
 
   root.setArrayProp()
 }
@@ -115,10 +118,24 @@ DataArray.prototype.setContext = function( context ){
   }
 }
 
+
+//watcher related mixin from DataObject
 DataArray.prototype.onStatus = DataArray.prototype.watch = DataObject.prototype.onStatus
 DataArray.prototype.changePropAndNotify = DataObject.prototype.changePropAndNotify
 DataArray.prototype.dispatchChange= DataObject.prototype.dispatchChange
 DataArray.prototype.notify= DataObject.prototype.notify
+
+//actions
+DataArray.prototype.invokeDataSourceMethod = DataObject.prototype.invokeDataSourceMethod
+DataArray.prototype.action = function( action ){
+  var root = this
+  return function( params ){
+    root.$$actions[action] = "executing"
+    return root.invokeDataSourceMethod("action", action)(root, params).then(function(){
+      root.$$actions[action] = "completed"
+    })
+  }
+}
 
 //map array methods
 _.forEach(["push","pop","shift","unshift","slice","splice","forEach"]).forEach(function( method){
@@ -128,6 +145,39 @@ _.forEach(["push","pop","shift","unshift","slice","splice","forEach"]).forEach(f
     this.setData(this.$$data)
   }
 })
+
+DataArray.prototype.pluck = function( attr ){
+  return _.pluck( this.$$data, attr)
+}
+
+DataArray.prototype.filter = function( attr, filterDef ){
+  var filterFn = filterDef
+  var root = this
+
+  if( !_.isFunction( filterFn ) ){
+    filterFn = function( item ){
+      return _.isArray( filterDef ) ? (filterDef.indexOf(item[attr])!==-1) : (item[attr] === filterDef)
+    }
+  }
+
+  var slice = new DataArray( this.$$config, this.$$context)
+
+  if( this.$$filled ){
+    slice.set( root.$$data.filter( filterFn ) )
+  }else{
+    root.$$unFilledSlices.push( slice )
+    root.onStatus("$$filled", function(filled){
+      if( filled ){
+        root.$$unFilledSlices.forEach(function(slice){
+          slice.set( root.$$data.filter( filterFn ) )
+        })
+      }
+    })
+  }
+
+
+  return slice
+}
 
 
 module.exports = DataArray
