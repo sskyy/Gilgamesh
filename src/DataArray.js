@@ -139,7 +139,6 @@ DataArray.prototype.action = function( action ){
 
 //map array methods
 _.forEach(["push","pop","shift","unshift","slice","splice","forEach"]).forEach(function( method){
-  //console.log( method)
   DataArray.prototype[method] = function(){
     this.$$data[method].apply(this.$$data, arguments)
     this.setData(this.$$data)

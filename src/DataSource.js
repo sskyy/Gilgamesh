@@ -4,23 +4,34 @@ var DataArray = require("./DataArray")
 var $ = require("../libs/jquery-1.11.1.min.js")
 
 function DataSource( name, def ){
-  var root = this
   _.extend( this, _.merge({
     url : {
       collection : "/" + name+"/{action}",
       single: "/" + name+"/{id}/{action}"
     },
-    pk : "id", //allow array
+    pk : "id", //TODO allow array
     publicDataSources : {},
-    dataSourceMethods : {
-      save : root.save.bind(root),
-      delete : root.delete.bind(root),
-      publish : root.publish.bind(root),
-      action : root.action.bind(root)
-    },
-    actions : {}
+    actions : {
+      save : function( instance, params, dataSource ){
+        return {
+          url : dataSource.makeUrl( {id:instance.id} ),
+          method : _.isUndefined( instance[dataSource.pk] ) ? "POST" : "PUT",
+          data : instance.toObject()
+        }
+      },
+      delete: function( instance,params, dataSource ){
+        return {
+          url : dataSource.makeUrl( {id:instance.id} ),
+          method : _.isUndefined( instance[dataSource.pk] ) ? "POST" : "PUT",
+          data : instance.toObject()
+        }
+      }
+
+    }
   },def))
 }
+
+
 
 DataSource.prototype.query = function( settings ){
   return $.ajax(settings)
@@ -35,7 +46,7 @@ DataSource.prototype.interpolate = function( text, obj ){
 }
 
 DataSource.prototype.makeUrl = function( params ){
-  return this.interpolate( this.hasPrimaryKey(params )? this.url.single : this.url.collection, params).replace(/\/$/,"")
+  return this.interpolate( this.hasPrimaryKey(params )? this.url.single : this.url.collection, params).replace(/\/*\s*$/,"")
 }
 
 
@@ -56,33 +67,11 @@ DataSource.prototype.makeQuery = function( params){
 DataSource.prototype.makeData = function( data ){
   var result = _.cloneDeep(data)
   _.forEach(result, function(v, k){
-    if( /^\$\$/.test(k) ) delete result[k]
+    if(_.isFunction(v) || /^\$\$/.test(k) ) delete result[k]
   })
   return result
 }
 
-
-DataSource.prototype.save = function( instance ){
-  var root = this
-  return this.query({
-    url:root.makeUrl(instance),
-    type: root.hasPrimaryKey(instance) ? "PUT" : "POST",
-    data : root.makeData(instance)
-  })
-}
-
-DataSource.prototype.delete = function( instance){
-  var root = this
-  return this.query({
-    url:root.makeUrl(instance),
-    type: "DELETE"
-  })
-}
-
-DataSource.prototype.validate = function(instance){
-  //TODO use schema to do validate
-  instance.notify()
-}
 
 DataSource.prototype.publish = function( instance, name ){
   this.publicDataSources[name] = instance
@@ -92,7 +81,7 @@ DataSource.prototype.publish = function( instance, name ){
 DataSource.prototype.get = function( params ){
   params = params ? (_.isObject(params) ? params : _.zipObject([this.pk],[params]) ) : {}
   var root = this
-  var config = {methods:root.dataSourceMethods}
+  var config = {dataSource:root}
   var result = this.hasPrimaryKey(params) ? new DataObject(config) : new DataArray(config, params)
 
   this.query( {url:this.makeUrl(params),type:"GET",data:this.makeQuery(params)} ).then(function( res ){
@@ -103,7 +92,7 @@ DataSource.prototype.get = function( params ){
 }
 
 DataSource.prototype.new = function(){
-  return new DataObject({methods:this.dataSourceMethods})
+  return new DataObject({dataSource:this})
 }
 
 
@@ -133,9 +122,18 @@ DataSource.prototype.generateAction = function( action ){
 DataSource.prototype.action = function( action, defFn ){
   if( defFn ){
     this.actions[action] = defFn
-  }else{
-    return this.generateAction(action).bind(this)
   }
+  return this.generateAction(action).bind(this)
+}
+
+
+
+DataObject.prototype.save = function( instance){
+  return this.action("save")(instance)
+}
+
+DataObject.prototype.delete = function( instance){
+  return this.action("delete")(instance)
 }
 
 module.exports = DataSource

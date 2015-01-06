@@ -1,5 +1,16 @@
 var _ = require("lodash")
 
+//utilities
+
+function setRef( obj, attr, data){
+  return (new Function("obj","data","return obj."+attr +"=data"))(obj,  data)
+}
+
+function getRef(obj, attr){
+  return (new Function("obj","data","return obj."+attr ))(obj)
+}
+
+
 function DataObject( config ){
   var root = this
 
@@ -16,6 +27,7 @@ function DataObject( config ){
   }))
 }
 
+
 DataObject.prototype.set =function(obj){
   _.extend( this, obj )
   this.changePropAndNotify("$$filled",true)
@@ -30,43 +42,35 @@ DataObject.prototype.definePrivateProp = function( prop, initial ){
   })
 }
 
-DataObject.prototype.changePropAndNotify = function( status, val ){
-  var oldValue = this[status]
-  this[status] = val
+DataObject.prototype.changePropAndNotify = function( prop, val ){
+  var oldValue = getRef(this,prop)
+  setRef(this,prop,val)
 
-  this.dispatchChange({name:status,oldValue:oldValue},status)
+  this.dispatchChange({name:prop,oldValue:oldValue},prop)
   //notify all global listener
-  this.dispatchChange( {}, this.$$config.globalWatcherName )
+  this.dispatchChange( {name:prop,oldValue:oldValue}, this.$$config.globalWatcherName )
 }
 
+DataObject.prototype.toObject = function(){
+  var obj = {}
+  for( var i in this ){
+    if( this.hasOwnProperty(i)){
+      obj[i] = _.cloneDeep( this[i] )
+    }
+  }
+  return obj
+}
 
 /*
  * instance methods
  */
 DataObject.prototype.invokeDataSourceMethod = function( method ){
   var args = _.toArray(arguments).slice(1)
-  if( !this.$$config.methods || !this.$$config.methods[method] ) return  console.log( "DataSource method", method, "not passed in")
+  if( !this.$$config.dataSource[method] ) return  console.log( "DataSource method", method, "not passed in")
 
-  //DataSource method has already bind this to DataSource, so don't worry about `this` set to null.
-  return this.$$config.methods[method].apply( null, args)
+  return this.$$config.dataSource[method].apply( this.$$config.dataSource, args)
 }
 
-DataObject.prototype.invokeDataSourceMethodWithStatus = function( method, currentStatus, pastStatus){
-  var root = this
-  root.changePropAndNotify(currentStatus,true)
-  root.changePropAndNotify(pastStatus,false)
-  return this.invokeDataSourceMethod(method, this).then(function(){
-    root.changePropAndNotify(pastStatus,true)
-  }).fin(function(){
-    root.changePropAndNotify(currentStatus,false)
-  })
-}
-
-DataObject.prototype.validate = _.partial(DataObject.prototype.invokeDataSourceMethodWithStatus,"validate","$$validating","$$validated")
-DataObject.prototype.save = _.partial(DataObject.prototype.invokeDataSourceMethodWithStatus,"save","$$saving","$$saved")
-DataObject.prototype.delete = _.partial(DataObject.prototype.invokeDataSourceMethodWithStatus,"delete","$$deleting","$$deleted")
-
-//need to be implemented
 DataObject.prototype.publish = function( name){
   //return this.invokeDataSourceMethod("publish", this, name)
   var data = this.invokeDataSourceMethod("publish", this, name)
@@ -77,12 +81,22 @@ DataObject.prototype.publish = function( name){
 DataObject.prototype.action = function( action ){
   var root = this
   return function( params ){
-    root.$$actions[action] = "executing"
+    root.changePropAndNotify("$$actions."+action, "executing")
     return root.invokeDataSourceMethod("action", action)(root, params).then(function(){
-      root.$$actions[action] = "completed"
-    })
+      root.changePropAndNotify("$$actions."+action, "completed")
+6    })
   }
 }
+
+//quick methods
+DataObject.prototype.save = function(){
+  return this.action("save")()
+}
+
+DataObject.prototype.delete = function(){
+  return this.action("delete")
+}
+
 
 
 /*
@@ -114,23 +128,25 @@ DataObject.prototype.notify = function(){
   _.forEach(root.$$changes, function( change, prop ){
       root.dispatchChange( change, prop)
       delete root.$$changes[change.name]
+
+    //notify all listeners listened on whole object
+    root.dispatchChange( change, root.$$config.globalWatcherName )
   })
 
-  //notify all listeners listened on whole object
-  root.dispatchChange( {}, root.$$config.globalWatcherName )
+
 }
 
 DataObject.prototype.dispatchChange = function( change, prop){
   var root = this
-  prop = prop || change.name
-
 
   root.$$watchers[prop] && root.$$watchers[prop].forEach(function( handler ) {
-    handler( root[prop], change.oldValue)
+    //TODO should change pop up?
+    handler( getRef(root,change.name), change.oldValue, change)
   })
 }
 
-//TODO user Object.observe as advanced usage
+
+
 
 
 module.exports = DataObject

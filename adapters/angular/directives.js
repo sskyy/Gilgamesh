@@ -12,9 +12,13 @@ angular.module("Gilgamesh",[])
         var data = (new Function( "return " + tmp[0] ))()
         var alias = tmp[1]
         $scope[alias] = data
-        data.onStatus(function(){
-          console.log( $scope.status )
+        data.onStatus(function(v, o,obj){
+          console.log( "status change", JSON.stringify(obj ))
           //$scope.$digest()
+        })
+
+        data.watch("$$actions.save",function( v, o){
+          console.log("saving", v,o)
         })
       }
     }

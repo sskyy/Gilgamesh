@@ -147,7 +147,6 @@
               }else{
                 tobeCompiledCloneEl = importEl.cloneNode(true)
               }
-              console.log( tobeCompiledCloneEl)
 
               $el[0].appendChild( tobeCompiledCloneEl )
               compilingImportEls.push([ importEl, tobeCompiledCloneEl ])

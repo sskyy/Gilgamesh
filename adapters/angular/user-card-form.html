@@ -3,7 +3,13 @@
     <input type="text" ng-model="user.gender" placeholder="gender">
 </div>
 <button gm-role="save" ng-click="user.save()">save</button>
+<button gm-role="save" ng-click="user.delete()">delete</button>
+<button gm-role="save" ng-click="user.action('ally')()">ally to</button>
 <div gm-role="status">
-   <div>saving:{{user.$$saving}}</div>
-   <div>saved:{{user.$$saved}}</div>
+    <div>status:</div>
+    <ul>
+        <li ng-repeat="(name, status) in user.$$actions">
+            {{name}}:{{status}}
+        </li>
+    </ul>
 </div>
