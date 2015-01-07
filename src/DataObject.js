@@ -1,4 +1,4 @@
-var _ = require("lodash")
+//var _ = require("lodash")
 
 //utilities
 
@@ -144,9 +144,6 @@ DataObject.prototype.dispatchChange = function( change, prop){
     handler( getRef(root,change.name), change.oldValue, change)
   })
 }
-
-
-
 
 
 module.exports = DataObject

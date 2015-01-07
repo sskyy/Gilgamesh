@@ -1,5 +1,5 @@
 var DataObject = require("./DataObject")
-var _ = require("../libs/lodash.min.js")
+//var _ = require("../libs/lodash.min.js")
 
 function DataArray(config, context){
   var root = this

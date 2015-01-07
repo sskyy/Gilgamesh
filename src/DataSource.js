@@ -1,11 +1,12 @@
-var _  = require("../libs/lodash.min.js")
+//var _  = require("../libs/lodash.min.js")
 var DataObject  = require("./DataObject.js")
 var DataArray = require("./DataArray")
-var $ = require("../libs/jquery-1.11.1.min.js")
+//var $ = require("../libs/jquery-1.11.1.min.js")
 
 function DataSource( name, def ){
   _.extend( this, _.merge({
     url : {
+      base : "",
       collection : "/" + name+"/{action}",
       single: "/" + name+"/{id}/{action}"
     },
@@ -46,7 +47,7 @@ DataSource.prototype.interpolate = function( text, obj ){
 }
 
 DataSource.prototype.makeUrl = function( params ){
-  return this.interpolate( this.hasPrimaryKey(params )? this.url.single : this.url.collection, params).replace(/\/*\s*$/,"")
+  return this.interpolate( this.url.base + (this.hasPrimaryKey(params )? this.url.single : this.url.collection), params).replace(/\/*\s*$/,"")
 }
 
 
