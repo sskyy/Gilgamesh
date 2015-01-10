@@ -113,10 +113,10 @@ D("user").action("doSomething",function( instanceOrCollections, params, dataSour
 
 #### 2.2.2 Use template overwrite
 
-First, use `gmDirective` instead of `directive`:
+First, use `component` instead of `directive`:
 
 ```
-.gmDirective("userCardForm", function(){
+.component("userCardForm", function(){
     return {
       //require : "gmSource",
       priority : 98,
@@ -183,6 +183,40 @@ In some cases interaction between directives requires a lot of api or event, and
 
 	<div gm-import="newUser">{{user.name}}</div>
 	<div id="newUser" user-card-form gm-data="D('user').new() as user" ></div> 
+	
+#### 2.2.6 Component extend
+
+Extending a exist component is easy:
+
+```
+.component("userCardForm", function(){
+    return {
+	  extend : "otherComponent",
+      link : function( $scope, $el, $attrs){
+      	//parent link function will apply first
+      }
+    }
+  })
+```
+
+Waht happend in the background is that parent component link function will apply on the same scope and element. So public method or event listenner will be inherited.
+
+#### 2.2.7 Element event listener
+
+```
+//HTML markup
+<user-card-form on-submit="user.save()"></user-card-form>
+
+
+.component("userCardForm", function(){
+    return {
+      link : function( $scope, $el, $attrs){
+        var e = new Event("submit")
+        $el[0].dipatchEvent(e)
+      }
+    }
+  })
+```
 
 ## 3. Conventions
 
@@ -205,7 +239,7 @@ As title says, for example, implementing attribute `onSubmit` on a custom form w
 **Directives**
 
 ```
-.gmDirective( "myModal", function(){
+.component( "myModal", function(){
     return {
       link : function( $scope, $el, $attrs ){
         $el.css({/*your modal css*/})
@@ -226,7 +260,7 @@ As title says, for example, implementing attribute `onSubmit` on a custom form w
 ```
 
 ```
-.gmDirective("userCardForm", function(){
+.component("userCardForm", function(){
     return {
       template:
       '<div role="input">'+
@@ -267,4 +301,4 @@ As title says, for example, implementing attribute `onSubmit` on a custom form w
 
   - [ ] Polymer support
   - [ ] React support
-  - [ ] Event system
+  - [x] Event system

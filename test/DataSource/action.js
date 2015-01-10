@@ -108,7 +108,7 @@ describe("Actions", function(){
         //action status
         assert.equal( instance.$$actions[action], "executing" )
         actionPromise.then(function(){
-          assert.equal( instance.$$actions[action], "completed" )
+          assert.equal( instance.$$actions[action], "succeed" )
           done()
         })
       }
@@ -132,7 +132,7 @@ describe("Actions", function(){
         //action status
         assert.equal( collection.$$actions[action], "executing" )
         actionPromise.then(function(){
-          assert.equal( collection.$$actions[action], "completed" )
+          assert.equal( collection.$$actions[action], "succeed" )
           done()
         })
       }
@@ -156,7 +156,7 @@ describe("Actions", function(){
         //action status
         assert.equal( collection.$$actions[action], "executing" )
         actionPromise.then(function(){
-          assert.equal( collection.$$actions[action], "completed" )
+          assert.equal( collection.$$actions[action], "succeed" )
           done()
         })
       }

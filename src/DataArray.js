@@ -1,22 +1,27 @@
 var DataObject = require("./DataObject")
-//var _ = require("../libs/lodash.min.js")
+var util = require("./util")
+
+
 
 function DataArray(config, context){
   var root = this
-  _.forEach(["$$filled"],function(key){
+  config = config||{}
+  context = context||{}
+
+  util.forEach(["$$filled"],function(key){
     root.definePrivateProp(key, false)
   })
 
-  _.forEach(["$$watchers","$$changes","$$actions"],function(key){
+  util.forEach(["$$watchers","$$changes","$$actions"],function(key){
     root.definePrivateProp(key, {})
   })
 
-  _.forEach(["$$count","$$offset","$$skip"],function(key){
+  util.forEach(["$$count","$$limit","$$skip"],function(key){
     //we read 'offset', 'skip' from DataSource.get arguments
     root.definePrivateProp(key, context[key.replace("$$","")] || null)
   })
 
-  root.definePrivateProp("$$config",_.defaults( config,{
+  root.definePrivateProp("$$config",util.defaults( config,{
     globalWatcherName : "/"
   }))
 
@@ -54,6 +59,12 @@ DataArray.prototype.definePrivateProp = function( prop, initial ){
   })
 }
 
+//may used as  refresh
+DataArray.prototype.get = function( params ){
+  this.changePropAndNotify("$$filled", false)
+  this.$$config.dataSource.get( params === true ? this.$$context : params, this)
+}
+
 /**
  *
  * @param obj  Acceptable data structure : {data:[],context:{skip,offset,count}}
@@ -61,7 +72,7 @@ DataArray.prototype.definePrivateProp = function( prop, initial ){
  */
 DataArray.prototype.set = function( obj ){
   var root = this
-  if(_.isArray(obj)){
+  if(util.isArray(obj)){
     obj = {data:obj,context:{}}
   }
   root.setData( obj.data )
@@ -74,7 +85,7 @@ DataArray.prototype.set = function( obj ){
 DataArray.prototype.setData = function( data ){
   this.$$data = data
   var root = this
-  var indexToDelete = _.difference( Object.keys(root), Object.keys(data))
+  var indexToDelete = util.difference( Object.keys(root), Object.keys(data))
   for( var index in data){
     root.setItem( index, data[index])
   }
@@ -110,7 +121,7 @@ DataArray.prototype.setContext = function( context ){
   var root = this
   for( var key in context ){
     var privateKey = "$$"+key
-    if(_.isUndefined(root[privateKey])){
+    if(root[privateKey]===undefined){
       root.definePrivateProp(privateKey, context[key])
     }else{
       root[privateKey] =context[key]
@@ -127,18 +138,11 @@ DataArray.prototype.notify= DataObject.prototype.notify
 
 //actions
 DataArray.prototype.invokeDataSourceMethod = DataObject.prototype.invokeDataSourceMethod
-DataArray.prototype.action = function( action ){
-  var root = this
-  return function( params ){
-    root.$$actions[action] = "executing"
-    return root.invokeDataSourceMethod("action", action)(root, params).then(function(){
-      root.$$actions[action] = "completed"
-    })
-  }
-}
+DataArray.prototype.action = DataObject.prototype.action
+
 
 //map array methods
-_.forEach(["push","pop","shift","unshift","slice","splice","forEach"]).forEach(function( method){
+util.forEach(["push","pop","shift","unshift","slice","splice","forEach"],function( method){
   DataArray.prototype[method] = function(){
     this.$$data[method].apply(this.$$data, arguments)
     this.setData(this.$$data)
@@ -146,16 +150,16 @@ _.forEach(["push","pop","shift","unshift","slice","splice","forEach"]).forEach(f
 })
 
 DataArray.prototype.pluck = function( attr ){
-  return _.pluck( this.$$data, attr)
+  return util.pluck( this.$$data, attr)
 }
 
 DataArray.prototype.filter = function( attr, filterDef ){
   var filterFn = filterDef
   var root = this
 
-  if( !_.isFunction( filterFn ) ){
+  if( !( filterFn instanceof Function) ){
     filterFn = function( item ){
-      return _.isArray( filterDef ) ? (filterDef.indexOf(item[attr])!==-1) : (item[attr] === filterDef)
+      return util.isArray( filterDef ) ? (filterDef.indexOf(item[attr])!==-1) : (item[attr] === filterDef)
     }
   }
 

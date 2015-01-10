@@ -22,10 +22,13 @@ describe("Get Object", function(){
   beforeEach(function(){
     D("user",{
       query : function(  settings ){
-        if( (new RegExp(idToGet+"$")).test( settings.url)  ){
+        console.log("settings", settings.url)
+        if( /\/user\/\d+/.test(settings.url)  ){
           return new Promise(function( resolve){
             setTimeout(function(){
-              resolve(userList[0])
+              var id =  parseInt( settings.url.split("/").pop() )
+              console.log( "resolving", _.find(userList,{id:id}), userList, {id:id})
+              resolve(_.find(userList,{id:id}))
             },100)
           })
         }else{
@@ -99,5 +102,26 @@ describe("Get Object", function(){
       }
     })
   })
+
+  it("refresh a certain object", function( done ){
+    var userObject = D("user").get(idToGet)
+    var refreshed = false
+    assert.equal( userObject instanceof  DataObject, true )
+    userObject.onStatus("$$filled", function( filled ){
+      if( filled ){
+        if( !refreshed ){
+          assert.equal( userObject.id, idToGet )
+          console.log("getting", idToGet+1)
+          userObject.get({id: idToGet+1})
+          refreshed = true
+        }else{
+          assert.equal( userObject.id, idToGet+1 )
+          done()
+        }
+      }
+    })
+  })
+
+  //TODO add DataArray and DataObject `get` test
 })
 

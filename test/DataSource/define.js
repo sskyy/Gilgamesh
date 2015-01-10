@@ -1,8 +1,7 @@
 var D = require("../../src/D.js")
 var assert = require("assert")
 var DataArray = require("../../src/DataArray.js")
-var DataObject = require("../../src/DataObject.js")
-var Promise = require("bluebird")
+var DataSource = require("../../src/DataArray.js")
 var _= require("lodash")
 
 /**
@@ -12,6 +11,7 @@ describe("Define", function(){
   it( "auto definition",function(){
     var autoCol = "post"
     var autoDef = D(autoCol,{})
+    //assert.equal( autoDef instanceof DataSource,  true)
     assert.equal( autoDef.url.collection,  "/"+autoCol+"/{action}" )
     assert.equal( autoDef.url.single,  "/"+autoCol+"/{id}/{action}" )
   })

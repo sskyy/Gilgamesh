@@ -1,4 +1,4 @@
-(function(){
+(function(global){
 
   var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
   var FN_ARG_SPLIT = /,/;
@@ -19,73 +19,118 @@
     return $inject;
   }
 
+  function replaceEmptyInnerHTML( $target, $source ){
+    if( isEmptyInnerHTML($target) ){
+      $target.innerHTML =  $source.innerHTML
+    }
+  }
 
+  function replaceSourceInnerHTML( $target, $source ){
+    if( !isEmptyInnerHTML($source) ){
+      $target.innerHTML =  $source.innerHTML
+    }
+  }
+
+  function isEmptyInnerHTML( el ){
+    return /^\s*$/.test( el.innerHTML)
+  }
+
+  function replaceWith(  toReplace, target){
+    var parent = target.parentNode
+    parent.replaceChild( toReplace, target)
+  }
+
+  function removeElement( el ){
+    el.parentNode.removeChild(el)
+  }
+
+  function replaceInnerHTML( toReplace, target){
+    target.innerHTML = toReplace.innerHTML
+  }
+
+  function mergeArray( target, source ){
+    for( var i in source){
+      if( target.indexOf( source[i]) == -1 ){
+        target.push( source[i])
+      }
+    }
+    return target
+  }
+
+  function mergeEl( target, source ){
+    for( var i in source.attributes ){
+      if( source.attributes[i].nodeName
+        && target.getAttribute(source.attributes[i].nodeName) === null
+        && source.attributes[i].nodeName !== "class"
+        && source.attributes[i].nodeName !== "style"  ){
+        target.setAttribute(source.attributes[i].nodeName,source.attributes[i].value )
+      }
+    }
+
+    target.className = mergeArray( target.className.split(" "), source.className.split(" ")).join(" ")
+    return target
+  }
+
+  global._CACHE_ID = -1
+  global._CACHE_ATTRIBUTE = "gm-child-cache-id"
+  global._ORIGIN_ELEMENT_CACHE = {}
+  global._GM_DIRECTIVE_NAMES = []
+
+
+  //gm directive map, used for extend
+  var directives = {}
 
   var _module = angular.module
   angular.module = function(){
     var module = _module.apply( angular, arguments)
 
-    module.gmDirective = function(name, directiveDef){
+    module.component = function(name, directiveDef){
       var directiveDefArgs = annotate( directiveDef )
-
-
-      function replaceEmptyInnerHTML( $target, $source ){
-        if( isEmptyInnerHTML($target) ){
-          $target.innerHTML =  $source.innerHTML
-        }
-      }
-
-      function replaceSourceInnerHTML( $target, $source ){
-        if( !isEmptyInnerHTML($source) ){
-          $target.innerHTML =  $source.innerHTML
-        }
-      }
-
-      function isEmptyInnerHTML( el ){
-        return /^\s*$/.test( el.innerHTML)
-      }
-
-      function replaceWith(  toReplace, target){
-        var parent = target.parentNode
-        parent.replaceChild( toReplace, target)
-      }
-
-      function removeElement( el ){
-        el.parentNode.removeChild(el)
-      }
-
-      function replaceInnerHTML( toReplace, target){
-        target.innerHTML = toReplace.innerHTML
-      }
 
       var replacedDirectiveDef = function(){
         var directive =  directiveDef.apply( directiveDef, arguments)
 
+        if( directive.template || directive.templateUrl ){
+
+
+
+          //TODO add tag name support
+          angular.forEach( document.querySelectorAll("["+name.replace(/([A-Z])/g,"-$1").toLowerCase()+"]"), function( el ){
+            if( el.getAttribute(global._CACHE_ATTRIBUTE) !== null ) return
+            ++global._CACHE_ID
+            global._ORIGIN_ELEMENT_CACHE[global._CACHE_ID] = el.cloneNode(true)
+            el.setAttribute(global._CACHE_ATTRIBUTE,global._CACHE_ID)
+          })
+          global._GM_DIRECTIVE_NAMES.push(name)
+        }
+
         if( directive.compile ) throw new Error("you cannot wrap a directive with compile")
         if( directive.transclude ) throw new Error("you cannot wrap a directive with transclude")
 
+
+        //must init a scope
         if( !directive.scope ) directive.scope = true
+        //deal with replace, we do manually replace
+        directive._replace = directive.replace
+        delete directive.replace
 
-        var cacheId = -1
-        var originElementCache = {}
-        var cacheAttribute = "gm-child-cache-id"
-
-        //TODO add tag name support
-        angular.forEach( document.querySelectorAll("["+name.replace(/([A-Z])/g,"-$1").toLowerCase()+"]"), function( el ){
-          if( el.getAttribute(cacheAttribute) !== null ) return
-          ++cacheId
-          originElementCache[cacheId] = el.cloneNode(true)
-          el.setAttribute(cacheAttribute,cacheId)
-        })
 
         directive.compile = function( $el ){
 
           var compilingImportEls = []
 
           //should only compile once and only compile with the one that has template
-          if( (directive.template || directive.templateUrl) && $el[0].getAttribute("gm-compiled") === null ) {
+          if( (directive.template || directive.templateUrl) && $el[0].getAttribute("gm-tpl-overwrote") === null ) {
+            if( directive._replace){
+              if( $el[0].childNodes.length >1 ){
+                console.log("you have multiple child nodes in directive", name, "cannot replace")
+              }else{
+                mergeEl($el[0], $el[0].childNodes[0])
+                $el[0].innerHTML = $el[0].childNodes[0].innerHTML
+              }
+            }
 
-            var originEl = originElementCache[$el[0].getAttribute(cacheAttribute)]
+            var originEl = global._ORIGIN_ELEMENT_CACHE[$el[0].getAttribute(global._CACHE_ATTRIBUTE)]
             var compileElClone = $el[0].cloneNode(true)
             var totalOverwrite = !isEmptyInnerHTML(originEl)
 
@@ -117,9 +162,11 @@
               })
             }
 
+
             if( originEl.getAttribute('gm-tpl-exclude') !==null ){
               totalOverwrite = false
               $el[0].getAttribute('gm-tpl-exclude').split(",").forEach(function( roleToExclude){
+
                 removeElement($el[0].querySelector("[gm-role="+roleToExclude+"]"))
               })
             }
@@ -128,20 +175,31 @@
               $el[0].innerHTML = originEl.innerHTML
             }
 
-            //handle import with gm-tpl-inject   and handle import with gm-role
+            //handle import with gm-role
             var id = originEl.getAttribute("id")
             angular.forEach(document.querySelectorAll("[gm-import="+id+"]"),function(importEl){
               var tobeCompiledCloneEl
-              var roleEl
+              var roleEl,roleName
 
-              if( importEl.getAttribute("gm-role")!==null ){
-                roleEl = compileElClone.querySelector("[gm-role="+ importEl.getAttribute("gm-role")+"]")
+              if( importEl.getAttribute("gm-from-role")!==null ){
+                roleName = importEl.getAttribute("gm-from-role")
+
+                roleEl = compileElClone.querySelector("[gm-role="+ roleName+"]")
                 if( roleEl ){
+
                   tobeCompiledCloneEl = roleEl.cloneNode(true)
-                  replaceSourceInnerHTML(tobeCompiledCloneEl, roleEl)
                   tobeCompiledCloneEl.setAttribute("gm-import",id)
+                  if( !isEmptyInnerHTML(importEl)){
+                    replaceInnerHTML(importEl, tobeCompiledCloneEl)
+                  }
+
+                  //attribute overwrite
+                  for( var i in importEl.attributes ){
+                    tobeCompiledCloneEl.setAttribute( importEl.attributes[i].nodeName , importEl.attributes[i].value)
+                  }
+
                 }else{
-                  console.log("no such role", importEl.getAttribute("gm-role"),"in element", $el[0])
+                  console.log("no such role",roleName,"in element", $el[0])
                 }
 
               }else{
@@ -154,33 +212,90 @@
 
 
 
-            $el[0].getAttribute("gm-compiled",true)
+            $el[0].setAttribute("gm-tpl-overwrote",true)
           }
 
-          return function( scope, ele, attrs){
+          return function( $scope, $el, $attrs){
+            //deal with imported elements
+            if( compilingImportEls.length){
               window.setTimeout(function(){
                 var resetEl
                 while( resetEl = compilingImportEls.pop() ){
                   replaceWith( resetEl[1],resetEl[0] )
                 }
               },1)
+            }
 
-            return directive.link.call(directive, scope, ele, attrs)
+            //define magic attributes
+            $scope.$$id = $el[0].id
+
+            //deal with extend
+            var ancestors = [],
+              currentAncestor
+            if( directive.extend ){
+              if( !directives[directive.extend] ){
+                console.log("parent gm directive not found", directive.extend)
+              }else{
+
+                currentAncestor = directive.extend
+                while( currentAncestor ) {
+                  if( !directives[currentAncestor].ins){
+                    directives[currentAncestor].ins = angular.element(document).injector().invoke(directives[currentAncestor].def);
+                  }
+                  ancestors.push( directives[currentAncestor].ins )
+                  currentAncestor = directives[currentAncestor].ins.extend //string or undefined
+                }
+
+                //caution!!! we reused var currentAncestor
+                while( currentAncestor = ancestors.pop()){
+                  currentAncestor.link.call(directive, $scope, $el, $attrs)
+                }
+              }
+            }
+
+            //deal with events
+            if( $el[0].getAttribute("gm-linked") === null){
+              for( var i in $el[0].attributes ){
+                if( $el[0].attributes[i].nodeName && /^(on|scope-on)-/.test($el[0].attributes[i].nodeName)){
+                  //Caution, we run callbacks on parent scope
+                  var event = $el[0].attributes[i].nodeName.replace(/^(on|scope-on)-/,"")
+                  var handler = $el[0].attributes[i].value
+                  console.log("listen on", event)
+                  $el[0].addEventListener(event, function(e){
+                    if( /^scope-on-/.test($el[0].attributes[i].nodeName) ){
+                      $scope.$parent.$eval(handler+"( $event)", {"$event":e})
+                    }else{
+                      (new Function('e',handler+".call(this,e)"))(e)
+                    }
+                  })
+                }
+              }
+            }
+
+
+
+            $el[0].getAttribute("gm-linked",true)
+            return directive.link.call(directive, $scope, $el, $attrs)
           }
 
         }
+        directives[name].ins = directive
         return directive
       }
 
-      replacedDirectiveDef.$inject = directiveDefArgs
+      //save it
+      directives[name]= {
+        def : directiveDef
+      }
 
+      replacedDirectiveDef.$inject = directiveDefArgs
       return module.directive( name, replacedDirectiveDef)
     }
 
     return module
   }
 
-})()
+})(window||this)
 
 
 

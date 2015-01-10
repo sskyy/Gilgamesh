@@ -1,4 +1,4 @@
-//var _ = require("lodash")
+var util = require("./util.js")
 
 //utilities
 
@@ -14,22 +14,22 @@ function getRef(obj, attr){
 function DataObject( config ){
   var root = this
 
-  _.forEach(["$$dirty","$$filled","$$validated", "$$empty", "$$validating", "$$saving" , "$$saved","$$deleting","$$deleted"],function(key){
+  util.forEach(["$$dirty","$$filled","$$validated", "$$empty", "$$validating", "$$saving" , "$$saved","$$deleting","$$deleted"],function(key){
     root.definePrivateProp(key, false)
   })
 
-  _.forEach(["$$watchers","$$changes","$$actions"],function(key){
+  util.forEach(["$$watchers","$$changes","$$actions"],function(key){
     root.definePrivateProp(key, {})
   })
 
-  root.definePrivateProp("$$config",_.defaults( config,{
+  root.definePrivateProp("$$config",util.defaults( config,{
     globalWatcherName : "/"
   }))
 }
 
 
 DataObject.prototype.set =function(obj){
-  _.extend( this, obj )
+  util.extend( this, obj )
   this.changePropAndNotify("$$filled",true)
 }
 
@@ -55,7 +55,7 @@ DataObject.prototype.toObject = function(){
   var obj = {}
   for( var i in this ){
     if( this.hasOwnProperty(i)){
-      obj[i] = _.cloneDeep( this[i] )
+      obj[i] = util.cloneDeep( this[i] )
     }
   }
   return obj
@@ -65,7 +65,7 @@ DataObject.prototype.toObject = function(){
  * instance methods
  */
 DataObject.prototype.invokeDataSourceMethod = function( method ){
-  var args = _.toArray(arguments).slice(1)
+  var args = util.toArray(arguments).slice(1)
   if( !this.$$config.dataSource[method] ) return  console.log( "DataSource method", method, "not passed in")
 
   return this.$$config.dataSource[method].apply( this.$$config.dataSource, args)
@@ -83,27 +83,40 @@ DataObject.prototype.action = function( action ){
   return function( params ){
     root.changePropAndNotify("$$actions."+action, "executing")
     return root.invokeDataSourceMethod("action", action)(root, params).then(function(){
-      root.changePropAndNotify("$$actions."+action, "completed")
-6    })
+      root.changePropAndNotify("$$actions."+action, "succeed")
+    },function(){
+      root.changePropAndNotify("$$actions."+action, "failed")
+    })
   }
 }
 
 //quick methods
-DataObject.prototype.save = function(){
-  return this.action("save")()
+DataObject.prototype.save = function(params){
+  return this.action("save")(params)
 }
 
 DataObject.prototype.delete = function(){
   return this.action("delete")
 }
 
+//may used as  refresh
+DataObject.prototype.get = function( params ){
+  this.changePropAndNotify("$$filled", false)
+
+  if( params === true ){
+    params = {}
+    params[this.$$config.dataSource.pk] = this[this.$$config.dataSource.pk]
+  }
+  console.log("regeting", params)
+  this.$$config.dataSource.get( params, this)
+}
 
 
 /*
  * status watchers
  */
 DataObject.prototype.watch = function( name, handler ){
-  if(_.isFunction(name) ){
+  if(util.isFunction(name) ){
     handler = name
     name = this.$$config.globalWatcherName
   }
@@ -125,7 +138,7 @@ DataObject.prototype.saveChanges = function( change ){
 //change : {name, obj, type, oldValue}
 DataObject.prototype.notify = function(){
   var root = this
-  _.forEach(root.$$changes, function( change, prop ){
+  util.forEach(root.$$changes, function( change, prop ){
       root.dispatchChange( change, prop)
       delete root.$$changes[change.name]
 
