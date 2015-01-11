@@ -75,6 +75,12 @@
         }
       }
     })
+    .directive("gmImport",function(){
+      return {
+        terminal : true,
+        priority : 0
+      }
+    })
 
 })(window||this)
 

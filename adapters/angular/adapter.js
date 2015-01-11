@@ -63,6 +63,9 @@
         && target.getAttribute(source.attributes[i].nodeName) === null
         && source.attributes[i].nodeName !== "class"
         && source.attributes[i].nodeName !== "style"  ){
+
+        console.log("setting",source.attributes[i].nodeName,source)
+
         target.setAttribute(source.attributes[i].nodeName,source.attributes[i].value )
       }
     }
@@ -194,10 +197,9 @@
                   }
 
                   //attribute overwrite
-                  for( var i in importEl.attributes ){
-                    tobeCompiledCloneEl.setAttribute( importEl.attributes[i].nodeName , importEl.attributes[i].value)
-                  }
+                  mergeEl(tobeCompiledCloneEl,importEl)
 
+                  console.log( tobeCompiledCloneEl)
                 }else{
                   console.log("no such role",roleName,"in element", $el[0])
                 }
@@ -207,6 +209,10 @@
               }
 
               $el[0].appendChild( tobeCompiledCloneEl )
+              tobeCompiledCloneEl.setAttribute("gm-imported",importEl.getAttribute("gm-import"))
+              tobeCompiledCloneEl.removeAttribute("gm-import")
+
+
               compilingImportEls.push([ importEl, tobeCompiledCloneEl ])
             })
 

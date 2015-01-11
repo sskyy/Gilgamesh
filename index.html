@@ -7,10 +7,15 @@
     <script src="libs/angular.min.js"></script>
     <script src="./adapters/angular/adapter.js"></script>
     <script src="./build/Gilgamesh.js"></script>
+
     <style>
         body{
-            background: #eee;
+            background: #333;
             padding: 20px;;
+        }
+
+        title{
+
         }
 
         [user-card-form]{
@@ -33,76 +38,123 @@
         .block > h1{
             margin-left:  -10px;
         }
+
+        .block pre{
+            background: #eee;
+            padding: 10px;
+            overflow-x: auto;
+            line-height: 100%;
+        }
     </style>
 </head>
 
 <body ng-app="demo">
-    <div class="block">
-        <h1>1. Original Directive</h1>
-        <div id="userCard" user-card-form gm-data="D('user').new().publish('global.user') as user" ></div>
-    </div>
+    <div></div>
 
     <div class="block">
-        <h1>2. Total overwrite</h1>
-        <div id="userCard2" user-card-form  gm-data="D('user').receive('global.user') as user" >
-            name : <input type="text" ng-model="user.name">
-            gender : <input type="text" ng-model="user.gender">
-            <button gm-role="save" ng-click="user.save()">save also</button>
-            <div>save : {{user.$$actions.save}}</div>
+        <h1>1. Original Directive</h1>
+        <pre>
+angular.module("demo",["Gilgamesh"])
+.component("userCardForm", function(){
+    return {
+      templateUrl : "/Gilgamesh/adapters/angular/components/user-card-form.html",
+      link : function( $scope, $el){
+      }
+    }
+  })
+        </pre>
+        <pre html-encode class="code">
+<div id="userCard&nbsp;" user-card-form gm-data="D('user').new().publish('global.user') as user" ></div>
+        </pre>
+        <div class="playground">
+            <div id="userCard" user-card-form gm-data="D('user').new().publish('global.user') as user" ></div>
         </div>
     </div>
 
     <div class="block">
+        <h1>2. Total overwrite</h1>
+        <pre html-encode class="code">
+<div id="userCard2" user-card-form  gm-data="D('user').receive('global.user') as user" >
+    name : <input type="text" ng-model="user.name">
+    gender : <input type="text" ng-model="user.gender">
+    <button gm-role="save" ng-click="user.save()">save also</button>
+    <div>save : {{user.$$actions.save}}</div>
+</div>
+        </pre>
+        <div class="playground">
+            <div id="userCard2" user-card-form  gm-data="D('user').receive('global.user') as user" >
+                name : <input type="text" ng-model="user.name">
+                gender : <input type="text" ng-model="user.gender">
+                <button gm-role="save" ng-click="user.save()">save also</button>
+                <div>save : {{user.$$actions.save}}</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="block">
         <h1>3. Only change save button</h1>
-        <div id="userCard3" user-card-form  gm-tpl-partial gm-data="D('user').receive('global.user') as user">
-            <button gm-role="save" ng-click="user.save()">only changed button</button>
+        <pre html-encode class="code">
+<div id="userCard3" user-card-form  gm-tpl-partial gm-data="D('user').receive('global.user') as user">
+    <button gm-role="save" ng-click="user.save()">only changed button</button>
+</div>
+        </pre>
+        <div class="playground">
+            <div id="userCard3" user-card-form  gm-tpl-partial gm-data="D('user').receive('global.user') as user">
+                <button gm-role="save" ng-click="user.save()">only changed button</button>
+            </div>
         </div>
     </div>
 
     <div class="block">
         <h1>4. Only include status</h1>
-        <div id="userCard5" user-card-form  gm-tpl-include gm-data="D('user').receive('global.user') as user">
-            <div gm-role="status"></div>
+        <pre html-encode class="code">
+<div id="userCard5" user-card-form  gm-tpl-include gm-data="D('user').receive('global.user') as user">
+    <div gm-role="status"></div>
+</div>
+        </pre>
+        <div class="playground">
+            <div id="userCard5" user-card-form  gm-tpl-include gm-data="D('user').receive('global.user') as user">
+                <div gm-role="status"></div>
+            </div>
         </div>
     </div>
 
 
     <div class="block">
         <h1>5. Exclude save button in modal</h1>
-        <button onClick="E('modal1').open()">open modal</button>
-
-        <modal id="modal1" style="box-shadow:1px 1px 3px #666">
-            <modal-body style="display: block;padding:10px">
-                <div id="userCard6" gm-data="D('user').receive('global.user') as user" user-card-form gm-tpl-exclude="save" onSubmit="E('ecs-create-modal').hide()"></div>
-            </modal-body>
-        </modal>
-
-    </div>
-
-    <div class="block">
-        <h1>6. Import elements</h1>
-        <div>
-            <h2>6.1 Import button</h2>
-            <button gm-import="userCard" gm-role="save">save for 1</button>
-
-            <h2>6.2 Import scope</h2>
-            <div gm-import="userCard">saving:{{user.$$actions.save}}</div>
-
-            <h3>6.3 Import role</h3>
-            <div gm-import="userCard" gm-role="status"></div>
-
-            <h3>6.4 Import role with custom children</h3>
-            <div gm-import="userCard" gm-role="status">
-                <div>saving @  {{user.$$actions.save}}</div>
-            </div>
+        <pre html-encode>
+<button onClick="E('modal1').open()">open modal</button>
+<modal id="modal1" style="box-shadow:1px 1px 3px #666">
+    <modal-body style="display: block;padding:10px">
+        <div id="userCard6" user-card-form
+             gm-data="D('user').receive('global.user') as user"
+             gm-tpl-exclude="save"></div>
+    </modal-body>
+</modal>
+        </pre>
+        <div class="playground">
+            <button onClick="E('modal1').open()">open modal</button>
+            <modal id="modal1" style="box-shadow:1px 1px 3px #666">
+                <modal-body style="display: block;padding:10px">
+                    <div id="userCard6" gm-data="D('user').receive('global.user') as user" user-card-form gm-tpl-exclude="save" onSubmit="E('ecs-create-modal').hide()"></div>
+                </modal-body>
+            </modal>
         </div>
     </div>
 
     <div class="block">
-        <h1>7. Event listener</h1>
-        <div>
+        <h1>6. Event listener</h1>
+        <pre html-encode>
+<button onClick="E('modal2').open()">open modal and trigger open event</button>
+<modal id="modal2" style="box-shadow:1px 1px 3px #666" on-open="alert('fired when modal open')">
+    <modal-body style="display: block;padding:10px">
+        This modal has a listener on open event.
+    </modal-body>
+</modal>
+        </pre>
+        <div class="playground">
             <button onClick="E('modal2').open()">open modal and trigger open event</button>
-
             <modal id="modal2" style="box-shadow:1px 1px 3px #666" on-open="alert('fired when modal open')">
                 <modal-body style="display: block;padding:10px">
                     This modal has a listener on open event.
@@ -110,10 +162,89 @@
             </modal>
         </div>
     </div>
+    
+    <div class="block">
+        <h1>7. Import elements</h1>
+        <div>
+            <h2>7.1 Import button</h2>
+            <pre html-encode>
+<button gm-import="userCard" gm-from-role="save">save for 1</button>
+            </pre>
+            <div class="playground">
+                <button gm-import="userCard" gm-from-role="save">save for 1</button>
+            </div>
+
+
+            <h2>7.2 Import scope</h2>
+            <pre html-encode>
+<div gm-import="userCard">user.name:{{user.name}}</div>
+            </pre>
+            <div class="playground">
+                <div gm-import="userCard">user.name:{{user.name}}</span></span></div>
+            </div>
+
+
+            <h3>7.3 Import role</h3>
+            <pre html-encode>
+<div gm-import="userCard" gm-from-role="status"></div>
+            </pre>
+            <div class="playground">
+                <div gm-import="userCard" gm-from-role="status"></div>
+            </div>
+
+            <h3>7.4 Import role with custom children</h3>
+            <pre html-encode>
+<div gm-import="userCard" gm-from-role="status">
+    <div>STATUS:</div>
+    <ul>
+        <li ng-repeat="(name, status) in user.$$actions">
+            {{name}}==={{status}}
+        </li>
+    </ul>
+</div>
+            </pre>
+            <div class="playground">
+                <div gm-import="userCard" gm-from-role="status">
+                    <div>STATUS:</div>
+                    <ul>
+                        <li ng-repeat="(name, status) in user.$$actions">
+                            {{name}}==={{status}}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
 
     <script src="./adapters/angular/directives.js"></script>
     <script src="./adapters/angular/components/user-card-form.js"></script>
     <script src="./adapters/angular/components/modal.js"></script>
 
+    <script>
+        var REGX_HTML_ENCODE = /"|&|'|<|>|[\x00-\x20]|[\x7F-\xFF]|[\u0100-\u2700]/g;
+
+        function encodeHtml(s){
+            return (typeof s != "string") ? s :
+                s.replace(REGX_HTML_ENCODE,
+                    function($0){
+                        var c = $0.charCodeAt(0), r = ["&#"];
+                        c = (c == 0x20) ? 0xA0 : c;
+                        r.push(c); r.push(";");
+                        return r.join("");
+                    });
+        };
+
+        angular.module("Gilgamesh").directive("htmlEncode", function(){
+            return {
+                priority : 0,
+                terminal:true,
+                compile : function( $el ){
+                    $el[0].innerHTML = encodeHtml($el[0].innerHTML)
+                }
+            }
+        })
+    </script>
 </body>
 </html>
