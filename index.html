@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <!--<script src="libs/jquery-1.11.1.min.js"></script>-->
+    <script src="libs/angular.min.js"></script>
+    <script src="./adapters/angular/adapter.js"></script>
+    <script src="./build/Gilgamesh.js"></script>
+    <style>
+        body{
+            background: #eee;
+            padding: 20px;;
+        }
+
+        [user-card-form]{
+            padding: 10px;border: 1px cornflowerblue solid;margin: 10px;
+        }
+
+
+        h1,h2,h3,h4{
+            color : #2899ae;
+            border-bottom:1px #2899ae solid ;
+        }
+
+
+        .block{
+            padding: 5px 20px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+
+        .block > h1{
+            margin-left:  -10px;
+        }
+    </style>
+</head>
+
+<body ng-app="demo">
+    <div class="block">
+        <h1>1. Original Directive</h1>
+        <div id="userCard" user-card-form gm-data="D('user').new().publish('global.user') as user" ></div>
+    </div>
+
+    <div class="block">
+        <h1>2. Total overwrite</h1>
+        <div id="userCard2" user-card-form  gm-data="D('user').receive('global.user') as user" >
+            name : <input type="text" ng-model="user.name">
+            gender : <input type="text" ng-model="user.gender">
+            <button gm-role="save" ng-click="user.save()">save also</button>
+            <div>save : {{user.$$actions.save}}</div>
+        </div>
+    </div>
+
+    <div class="block">
+        <h1>3. Only change save button</h1>
+        <div id="userCard3" user-card-form  gm-tpl-partial gm-data="D('user').receive('global.user') as user">
+            <button gm-role="save" ng-click="user.save()">only changed button</button>
+        </div>
+    </div>
+
+    <div class="block">
+        <h1>4. Only include status</h1>
+        <div id="userCard5" user-card-form  gm-tpl-include gm-data="D('user').receive('global.user') as user">
+            <div gm-role="status"></div>
+        </div>
+    </div>
+
+
+    <div class="block">
+        <h1>5. Exclude save button in modal</h1>
+        <button onClick="E('modal1').open()">open modal</button>
+
+        <modal id="modal1" style="box-shadow:1px 1px 3px #666">
+            <modal-body style="display: block;padding:10px">
+                <div id="userCard6" gm-data="D('user').receive('global.user') as user" user-card-form gm-tpl-exclude="save" onSubmit="E('ecs-create-modal').hide()"></div>
+            </modal-body>
+        </modal>
+
+    </div>
+
+    <div class="block">
+        <h1>6. Import elements</h1>
+        <div>
+            <h2>6.1 Import button</h2>
+            <button gm-import="userCard" gm-role="save">save for 1</button>
+
+            <h2>6.2 Import scope</h2>
+            <div gm-import="userCard">saving:{{user.$$actions.save}}</div>
+
+            <h3>6.3 Import role</h3>
+            <div gm-import="userCard" gm-role="status"></div>
+
+            <h3>6.4 Import role with custom children</h3>
+            <div gm-import="userCard" gm-role="status">
+                <div>saving @  {{user.$$actions.save}}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="block">
+        <h1>7. Event listener</h1>
+        <div>
+            <button onClick="E('modal2').open()">open modal and trigger open event</button>
+
+            <modal id="modal2" style="box-shadow:1px 1px 3px #666" on-open="alert('fired when modal open')">
+                <modal-body style="display: block;padding:10px">
+                    This modal has a listener on open event.
+                </modal-body>
+            </modal>
+        </div>
+    </div>
+
+    <script src="./adapters/angular/directives.js"></script>
+    <script src="./adapters/angular/components/user-card-form.js"></script>
+    <script src="./adapters/angular/components/modal.js"></script>
+
+</body>
+</html>
