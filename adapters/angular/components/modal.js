@@ -1,6 +1,7 @@
 angular.module("demo")
   .component("modal",function(){
   return {
+    restrict : "EA",
     link : function( $scope, $el){
       $el[0].open = function(){
         $el[0].style.display = "block"
@@ -16,4 +17,12 @@ angular.module("demo")
       $el[0].hide()
     }
   }
-})
+}).component("modalExtra",function(){
+    return {
+      restrict : "EA",
+      extend : "modal",
+      link : function($scope,$el){
+        console.log($el[0])
+      }
+    }
+  })

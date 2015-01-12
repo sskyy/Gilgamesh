@@ -1,6 +1,6 @@
 # Gilgamesh
 
-Gilgamesh is a collection of useful plugins and extensions based on AngularJS( Polymer version is coming soon) to help you build modern web application.
+Gilgamesh is a collection of useful plugins and extensions of AngularJS( Polymer version is coming soon) to help you build modern web application.
 Run a local web server and browse to http://127.0.0.1/runner-angular.html to see demo.
 
 ## 1. Architecture

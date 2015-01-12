@@ -12,10 +12,26 @@
         body{
             background: #333;
             padding: 20px;;
+            width: 1080px;
+            margin: 0 auto;
         }
 
-        title{
+        .title{
+            text-align: center;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bolder;
+        }
 
+        .desc{
+            color: #fff;
+            margin: 20px 0;
+            font-size: 16px;
+            line-height: 150%;
+        }
+
+        .desc a{
+            color: #bdd0e5;
         }
 
         [user-card-form]{
@@ -49,10 +65,22 @@
 </head>
 
 <body ng-app="demo">
-    <div></div>
+    <div class="title">Gilgamesh</div>
+
+    <div class="desc">
+        Gilgamesh is a collection of useful plugins and extensions of AngularJS( Polymer version is coming soon)
+        to help you build modern web application. This demo page only shows the magic of element extensions. For
+        more information please visit <a href="http://github.com/sskyy/Gilgamesh">http://github.com/sskyy/Gilgamesh</a>.
+
+    </div>
 
     <div class="block">
-        <h1>1. Original Directive</h1>
+        <h1>1. Original Component</h1>
+        <div class="intro">
+            This is the basic component(directive) we will use to explain the features of Gilgamesh.
+            You may notice that a new method named `component` is attached to angular. Consider it a `directive` decorator
+            which is compatible with the origin directive usage, but with more functionality.
+        </div>
         <pre>
 angular.module("demo",["Gilgamesh"])
 .component("userCardForm", function(){
@@ -63,8 +91,25 @@ angular.module("demo",["Gilgamesh"])
     }
   })
         </pre>
+        <pre html-encode>
+<div gm-role="input">
+    <input type="text" ng-model="user.name" placeholder="name">
+    <input type="text" ng-model="user.gender" placeholder="gender">
+</div>
+<button gm-role="save" ng-click="user.save()">save</button>
+<button gm-role="delete" ng-click="user.delete()">delete</button>
+<button gm-role="ally" ng-click="user.action('ally')()">ally to</button>
+<div gm-role="status">
+    <div>status:</div>
+    <ul>
+        <li ng-repeat="(name, status) in user.$$actions">
+            {{name}}:{{status}}
+        </li>
+    </ul>
+</div>
+        </pre>
         <pre html-encode class="code">
-<div id="userCard&nbsp;" user-card-form gm-data="D('user').new().publish('global.user') as user" ></div>
+<div id="userCard " user-card-form gm-data="D('user').new().publish('global.user') as user" ></div>
         </pre>
         <div class="playground">
             <div id="userCard" user-card-form gm-data="D('user').new().publish('global.user') as user" ></div>
@@ -72,7 +117,10 @@ angular.module("demo",["Gilgamesh"])
     </div>
 
     <div class="block">
-        <h1>2. Total overwrite</h1>
+        <h1>2. Total Overwrite</h1>
+        <div class="intro">
+            Using `component` enables you to overwrite template at runtime with simply add write what you want as child element.
+        </div>
         <pre html-encode class="code">
 <div id="userCard2" user-card-form  gm-data="D('user').receive('global.user') as user" >
     name : <input type="text" ng-model="user.name">
@@ -93,7 +141,13 @@ angular.module("demo",["Gilgamesh"])
     </div>
 
     <div class="block">
-        <h1>3. Only change save button</h1>
+        <h1>3. Partial overwrite</h1>
+        <div class="intro">
+            Sometime total overwrite is too verbose when you only want to change a small part of the original template.
+            `gm-tpl-partial` and `gm-role` can save you from that. First, add `gm-role` to the part of which may be overwrite just
+            like we did in the example component template above. Then add `gm-tpl-partial` to the element and use `gm-role` to specify
+            which part you want to overwrite in the child element.
+        </div>
         <pre html-encode class="code">
 <div id="userCard3" user-card-form  gm-tpl-partial gm-data="D('user').receive('global.user') as user">
     <button gm-role="save" ng-click="user.save()">only changed button</button>
@@ -107,7 +161,10 @@ angular.module("demo",["Gilgamesh"])
     </div>
 
     <div class="block">
-        <h1>4. Only include status</h1>
+        <h1>4. Partial include</h1>
+        <div class="intro">
+            The combination of `gm-tpl-include` and `gm-role` is used to include particular part of template.
+        </div>
         <pre html-encode class="code">
 <div id="userCard5" user-card-form  gm-tpl-include gm-data="D('user').receive('global.user') as user">
     <div gm-role="status"></div>
@@ -122,7 +179,10 @@ angular.module("demo",["Gilgamesh"])
 
 
     <div class="block">
-        <h1>5. Exclude save button in modal</h1>
+        <h1>5. Partial Exclude</h1>
+        <div class="intro">
+            `gm-tpl-exclude` is used to exclude part of the template.
+        </div>
         <pre html-encode>
 <button onClick="E('modal1').open()">open modal</button>
 <modal id="modal1" style="box-shadow:1px 1px 3px #666">
@@ -144,38 +204,16 @@ angular.module("demo",["Gilgamesh"])
     </div>
 
     <div class="block">
-        <h1>6. Event listener</h1>
-        <pre html-encode>
-<button onClick="E('modal2').open()">open modal and trigger open event</button>
-<modal id="modal2" style="box-shadow:1px 1px 3px #666" on-open="alert('fired when modal open')">
-    <modal-body style="display: block;padding:10px">
-        This modal has a listener on open event.
-    </modal-body>
-</modal>
-        </pre>
-        <div class="playground">
-            <button onClick="E('modal2').open()">open modal and trigger open event</button>
-            <modal id="modal2" style="box-shadow:1px 1px 3px #666" on-open="alert('fired when modal open')">
-                <modal-body style="display: block;padding:10px">
-                    This modal has a listener on open event.
-                </modal-body>
-            </modal>
+        <h1>6. Import Elements</h1>
+        <div class="intro">
+            This feature brings the reusability of component to the next level by breaking down the boundary of component with `gm-import` and `gm-from-role`.
+            You can now use part of a component anywhere. Take a look the examples below to see how we import part of the basic component.
         </div>
-    </div>
-    
-    <div class="block">
-        <h1>7. Import elements</h1>
         <div>
-            <h2>7.1 Import button</h2>
-            <pre html-encode>
-<button gm-import="userCard" gm-from-role="save">save for 1</button>
-            </pre>
-            <div class="playground">
-                <button gm-import="userCard" gm-from-role="save">save for 1</button>
+            <h2>6.1 Import Scope</h2>
+            <div class="intro">
+                Use the basic component to change user name and check out the result here.
             </div>
-
-
-            <h2>7.2 Import scope</h2>
             <pre html-encode>
 <div gm-import="userCard">user.name:{{user.name}}</div>
             </pre>
@@ -184,7 +222,10 @@ angular.module("demo",["Gilgamesh"])
             </div>
 
 
-            <h3>7.3 Import role</h3>
+            <h3>6.2 Import Role-Element</h3>
+            <div class="intro">
+                Click the save button of the basic component and check out the result here.
+            </div>
             <pre html-encode>
 <div gm-import="userCard" gm-from-role="status"></div>
             </pre>
@@ -192,7 +233,11 @@ angular.module("demo",["Gilgamesh"])
                 <div gm-import="userCard" gm-from-role="status"></div>
             </div>
 
-            <h3>7.4 Import role with custom children</h3>
+            <h3>6.3 Import Overwrote Role-Element </h3>
+            <div class="intro">
+                Imported element can be overwrote as well.
+                Click the save button of the basic component and check out the result here.
+            </div>
             <pre html-encode>
 <div gm-import="userCard" gm-from-role="status">
     <div>STATUS:</div>
@@ -215,8 +260,89 @@ angular.module("demo",["Gilgamesh"])
             </div>
         </div>
     </div>
-
     
+    <div class="block">
+        <h1>7. Event Listener</h1>
+        <div class="intro">
+            Dealing with element event has never been easier than using Gilgamesh. Let the code speak for itself, only remember if you want
+            use a scope method on as event listener, use `scope-on-` instead of `on-`.
+        </div>
+        <pre>
+angular.module("demo")
+  .component("modal",function(){
+  return {
+    link : function( $scope, $el){
+      $el[0].open = function(){
+        $el[0].style.display = "block"
+        $el[0].dispatchEvent(new Event("open"))
+        console.log("event fired")
+      }
+
+      $el[0].hide = function(){
+        $el[0].dispatchEvent(new Event("hide"))
+      }
+
+      $el[0].hide()
+    }
+  }
+})
+        </pre>
+        <pre html-encode>
+<button on-click="E('modal2').open()">open modal and trigger open event</button>
+<modal id="modal2" style="box-shadow:1px 1px 3px #666" on-open="alert('fired when modal open')">
+    <modal-body style="display: block;padding:10px">
+        This modal has a listener on open event.
+    </modal-body>
+</modal>
+        </pre>
+        <div class="playground">
+            <button onClick="E('modal2').open()">open modal and trigger open event</button>
+            <modal id="modal2" style="box-shadow:1px 1px 3px #666" on-open="alert('fired when modal open')">
+                <modal-body style="display: block;padding:10px">
+                    This modal has a listener on open event.
+                </modal-body>
+            </modal>
+        </div>
+    </div>
+    
+    
+
+    <div class="block">
+        <h1>8. Component Inherit</h1>
+        <div class="intro">
+            Component's behavior and public method can be inherit easily like code below:
+        </div>
+        <pre>
+angular.module("demo")
+  .component("modalExtra",function(){
+  return {
+    extend : 'modal',
+    link : function( $scope, $el){
+      //will automatically inherit modal's open method
+    }
+  }
+})
+        </pre>
+        <pre html-encode>
+<button onClick="E('modalExtra').open()">open modal-extra and trigger open event</button>
+<modal-extra id="modalExtra" style="box-shadow:1px 1px 3px #666" on-open="alert('fired when modal-extra open')">
+    <modal-body style="display: block;padding:10px">
+        This modal-extra has a listener on open event.
+    </modal-body>
+</modal-extra>
+        </pre>
+        <div class="playground">
+            <button onClick="E('modalExtra').open()">open modal-extra and trigger open event</button>
+            <modal-extra id="modalExtra" style="box-shadow:1px 1px 3px #666" on-open="alert('fired when modal-extra open')">
+                <modal-body style="display: block;padding:10px">
+                    This modal-extra has a listener on open event.
+                </modal-body>
+            </modal-extra>
+        </div>
+    </div>
+
+
+
 
     <script src="./adapters/angular/directives.js"></script>
     <script src="./adapters/angular/components/user-card-form.js"></script>
