@@ -8,7 +8,9 @@ function DataSource( name, def ){
 
 
   util.extend( this, util.defaults( def||{}, util.cloneDeep( this.globalConfig, function(v){
-    if( v instanceof Function ) return v
+    if( v instanceof Function ){
+      return v
+    }
   })))
 
 
@@ -40,19 +42,29 @@ DataSource.prototype.globalConfig = {
           data : util.extend( instance.toObject(), params)
         }
       },
-      delete: function( instance,params, dataSource ){
+      delete: function( instance, params, dataSource ){
         return {
-          url : dataSource.makeUrl( {id:instance.id} ),
-          method : util.isUndefined( instance[dataSource.pk] ) ? "POST" : "PUT",
-          data : instance.toObject()
+          url : dataSource.makeUrl( {id:instance.id} ) ,
+          method : "DELETE",
+          data : params
         }
       }
+    },
+    singular : function( item ){
+      return item
+    },
+    interceptors : {
+      "get" : [],
+      "query" : [],
+      "parse" : []
     }
   }
 
-
-
 DataSource.prototype.query = function( settings ){
+  var queryInterceptors = [].concat( this.interceptors.query)
+  queryInterceptors.forEach(function(interceptor){
+    interceptor( settings )
+  })
   return $.ajax(settings)
 }
 
@@ -92,10 +104,6 @@ DataSource.prototype.makeData = function( data ){
 }
 
 
-DataSource.prototype.publish = function( instance, name ){
-  this.publicDataSources[name] = instance
-  return instance
-}
 
 DataSource.prototype.get = function( params, instanceOrCollection ){
   params = params ? (util.isObject(params) ? params : util.zipObject([this.pk],[params]) ) : {}
@@ -105,9 +113,21 @@ DataSource.prototype.get = function( params, instanceOrCollection ){
     instanceOrCollection = this.hasPrimaryKey(params) ? new DataObject(config) : new DataArray(config, params)
   }
 
+  var settings = {url:this.makeUrl(params),type:"GET",data:this.makeQuery(params)}
+  var isSingle = root.hasPrimaryKey(params)
 
-  this.query( {url:this.makeUrl(params),type:"GET",data:this.makeQuery(params)} ).then(function( res ){
-    instanceOrCollection.set( root.parse( res, root.hasPrimaryKey(params) ) )
+  var getInterceptors = [].concat( root.interceptors.get )
+  getInterceptors.forEach(function(interceptor){
+    interceptor( settings, isSingle )
+  })
+
+  this.query( settings  ).then(function( res ){
+    var parseInterceptors = [].concat( root.interceptors.parse )
+    parseInterceptors.forEach(function(interceptor){
+      res = interceptor( res, isSingle )
+    })
+
+    instanceOrCollection.set( res )
   })
 
   return instanceOrCollection
@@ -117,9 +137,39 @@ DataSource.prototype.new = function(){
   return new DataObject({dataSource:this})
 }
 
+DataSource.prototype.publish = function( instance, name ){
+  if( this.publicDataSources[name] ){
+    //Todo, make it proxy to instance.
+    this.publicDataSources[name].set( instance.$$data || instance.toObject() )
+  }else{
+    this.publicDataSources[name] = instance
+  }
+
+  return this.publicDataSources[name]
+}
+
 
 DataSource.prototype.receive = function(name){
   return this.publicDataSources[name]
+}
+
+DataSource.prototype.receiveObject = function(name){
+  if( !this.publicDataSources[name] ){
+    this.publicDataSources[name]  = new DataObject({dataSource:this})
+  }
+
+  return this.publicDataSources[name]
+}
+
+DataSource.prototype.receiveArray = function(name){
+  var obj
+  if( this.publicDataSources[name] ){
+    obj =  this.publicDataSources[name]
+  }else{
+    this.publicDataSources[name] = obj = new DataArray({dataSource:this})
+  }
+
+  return obj
 }
 
 DataSource.prototype.generateAction = function( action ){

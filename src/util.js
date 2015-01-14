@@ -1,4 +1,4 @@
-module.exports = {
+var util = {
   forEach : function( arr, cb ){
     return arr.forEach(cb)
   },
@@ -48,7 +48,7 @@ module.exports = {
     }
   },
   clone : function(source, handler){
-    var o = {}
+    var o = util.isArray(source ) ? [] : {}
     this.forOwn(source, function(v,k){
       var r
       if( handler ) r = handler(v,k )
@@ -76,3 +76,5 @@ module.exports = {
     return o
   }
 }
+
+module.exports = util

@@ -4,7 +4,7 @@ var DataSource = require("./DataSource")
 function D( name, def ){
 
   if( def || !this.defs[name]){
-    if( this.defs[name] ) console.log( name+" has already defined.")
+    if( this.defs[name] ) console.log( name+" has already defined. we will overwrite it")
     this.defs[name] = new DataSource( name, def||{})
   }
 
@@ -83,9 +83,9 @@ DataArray.prototype.definePrivateProp = function( prop, initial ){
 }
 
 //may used as  refresh
-DataArray.prototype.get = function( params ){
+DataArray.prototype.get = function( params, append ){
   this.changePropAndNotify("$$filled", false)
-  this.$$config.dataSource.get( params === true ? this.$$context : params, this)
+  this.$$config.dataSource.get( params === true ? util.extend(this.$$context,append||{}) : params, this)
 }
 
 /**
@@ -108,13 +108,12 @@ DataArray.prototype.set = function( obj ){
 DataArray.prototype.setData = function( data ){
   this.$$data = data
   var root = this
-  var indexToDelete = util.difference( Object.keys(root), Object.keys(data))
-  for( var index in data){
-    root.setItem( index, data[index])
-  }
+  var i = 0, length = Math.max(data.length, this.$$data.length)
   //delete useless indexes
-  for( var dIndex in indexToDelete ){
-    delete root[dIndex]
+  while( i<length ){
+    if( root[i] ) delete root[i]
+    root.setItem( i, data[i])
+    i++
   }
 }
 
@@ -162,6 +161,9 @@ DataArray.prototype.notify= DataObject.prototype.notify
 //actions
 DataArray.prototype.invokeDataSourceMethod = DataObject.prototype.invokeDataSourceMethod
 DataArray.prototype.action = DataObject.prototype.action
+DataArray.prototype.singular = function( item ){
+  return this.invokeDataSourceMethod("singular",item)
+}
 
 
 //map array methods
@@ -241,6 +243,7 @@ function DataObject( config ){
 DataObject.prototype.set =function(obj){
   util.extend( this, obj )
   this.changePropAndNotify("$$filled",true)
+  return this
 }
 
 DataObject.prototype.definePrivateProp = function( prop, initial ){
@@ -306,7 +309,7 @@ DataObject.prototype.save = function(params){
 }
 
 DataObject.prototype.delete = function(){
-  return this.action("delete")
+  return this.action("delete")()
 }
 
 //may used as  refresh
@@ -381,7 +384,9 @@ function DataSource( name, def ){
 
 
   util.extend( this, util.defaults( def||{}, util.cloneDeep( this.globalConfig, function(v){
-    if( v instanceof Function ) return v
+    if( v instanceof Function ){
+      return v
+    }
   })))
 
 
@@ -413,19 +418,29 @@ DataSource.prototype.globalConfig = {
           data : util.extend( instance.toObject(), params)
         }
       },
-      delete: function( instance,params, dataSource ){
+      delete: function( instance, params, dataSource ){
         return {
-          url : dataSource.makeUrl( {id:instance.id} ),
-          method : util.isUndefined( instance[dataSource.pk] ) ? "POST" : "PUT",
-          data : instance.toObject()
+          url : dataSource.makeUrl( {id:instance.id} ) ,
+          method : "DELETE",
+          data : params
         }
       }
+    },
+    singular : function( item ){
+      return item
+    },
+    interceptors : {
+      "get" : [],
+      "query" : [],
+      "parse" : []
     }
   }
 
-
-
 DataSource.prototype.query = function( settings ){
+  var queryInterceptors = [].concat( this.interceptors.query)
+  queryInterceptors.forEach(function(interceptor){
+    interceptor( settings )
+  })
   return $.ajax(settings)
 }
 
@@ -465,10 +480,6 @@ DataSource.prototype.makeData = function( data ){
 }
 
 
-DataSource.prototype.publish = function( instance, name ){
-  this.publicDataSources[name] = instance
-  return instance
-}
 
 DataSource.prototype.get = function( params, instanceOrCollection ){
   params = params ? (util.isObject(params) ? params : util.zipObject([this.pk],[params]) ) : {}
@@ -478,9 +489,21 @@ DataSource.prototype.get = function( params, instanceOrCollection ){
     instanceOrCollection = this.hasPrimaryKey(params) ? new DataObject(config) : new DataArray(config, params)
   }
 
+  var settings = {url:this.makeUrl(params),type:"GET",data:this.makeQuery(params)}
+  var isSingle = root.hasPrimaryKey(params)
 
-  this.query( {url:this.makeUrl(params),type:"GET",data:this.makeQuery(params)} ).then(function( res ){
-    instanceOrCollection.set( root.parse( res, root.hasPrimaryKey(params) ) )
+  var getInterceptors = [].concat( root.interceptors.get )
+  getInterceptors.forEach(function(interceptor){
+    interceptor( settings, isSingle )
+  })
+
+  this.query( settings  ).then(function( res ){
+    var parseInterceptors = [].concat( root.interceptors.parse )
+    parseInterceptors.forEach(function(interceptor){
+      res = interceptor( res, isSingle )
+    })
+
+    instanceOrCollection.set( res )
   })
 
   return instanceOrCollection
@@ -490,9 +513,39 @@ DataSource.prototype.new = function(){
   return new DataObject({dataSource:this})
 }
 
+DataSource.prototype.publish = function( instance, name ){
+  if( this.publicDataSources[name] ){
+    //Todo, make it proxy to instance.
+    this.publicDataSources[name].set( instance.$$data || instance.toObject() )
+  }else{
+    this.publicDataSources[name] = instance
+  }
+
+  return this.publicDataSources[name]
+}
+
 
 DataSource.prototype.receive = function(name){
   return this.publicDataSources[name]
+}
+
+DataSource.prototype.receiveObject = function(name){
+  if( !this.publicDataSources[name] ){
+    this.publicDataSources[name]  = new DataObject({dataSource:this})
+  }
+
+  return this.publicDataSources[name]
+}
+
+DataSource.prototype.receiveArray = function(name){
+  var obj
+  if( this.publicDataSources[name] ){
+    obj =  this.publicDataSources[name]
+  }else{
+    this.publicDataSources[name] = obj = new DataArray({dataSource:this})
+  }
+
+  return obj
 }
 
 DataSource.prototype.generateAction = function( action ){
@@ -545,7 +598,7 @@ module.exports = function(id){
   global.E = require("./Element.js")
 })(window||this)
 },{"./D.js":1,"./DataSource":4,"./Element.js":5}],7:[function(require,module,exports){
-module.exports = {
+var util = {
   forEach : function( arr, cb ){
     return arr.forEach(cb)
   },
@@ -595,7 +648,7 @@ module.exports = {
     }
   },
   clone : function(source, handler){
-    var o = {}
+    var o = util.isArray(source ) ? [] : {}
     this.forOwn(source, function(v,k){
       var r
       if( handler ) r = handler(v,k )
@@ -623,4 +676,6 @@ module.exports = {
     return o
   }
 }
+
+module.exports = util
 },{}]},{},[6])

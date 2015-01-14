@@ -60,9 +60,9 @@ DataArray.prototype.definePrivateProp = function( prop, initial ){
 }
 
 //may used as  refresh
-DataArray.prototype.get = function( params ){
+DataArray.prototype.get = function( params, append ){
   this.changePropAndNotify("$$filled", false)
-  this.$$config.dataSource.get( params === true ? this.$$context : params, this)
+  this.$$config.dataSource.get( params === true ? util.extend(this.$$context,append||{}) : params, this)
 }
 
 /**
@@ -85,13 +85,12 @@ DataArray.prototype.set = function( obj ){
 DataArray.prototype.setData = function( data ){
   this.$$data = data
   var root = this
-  var indexToDelete = util.difference( Object.keys(root), Object.keys(data))
-  for( var index in data){
-    root.setItem( index, data[index])
-  }
+  var i = 0, length = Math.max(data.length, this.$$data.length)
   //delete useless indexes
-  for( var dIndex in indexToDelete ){
-    delete root[dIndex]
+  while( i<length ){
+    if( root[i] ) delete root[i]
+    root.setItem( i, data[i])
+    i++
   }
 }
 
@@ -139,6 +138,9 @@ DataArray.prototype.notify= DataObject.prototype.notify
 //actions
 DataArray.prototype.invokeDataSourceMethod = DataObject.prototype.invokeDataSourceMethod
 DataArray.prototype.action = DataObject.prototype.action
+DataArray.prototype.singular = function( item ){
+  return this.invokeDataSourceMethod("singular",item)
+}
 
 
 //map array methods

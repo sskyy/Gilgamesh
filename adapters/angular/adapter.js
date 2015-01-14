@@ -285,6 +285,7 @@
           }
 
         }
+        directive.isComponent = true
         directives[name].ins = directive
         return directive
       }

@@ -31,6 +31,7 @@ function DataObject( config ){
 DataObject.prototype.set =function(obj){
   util.extend( this, obj )
   this.changePropAndNotify("$$filled",true)
+  return this
 }
 
 DataObject.prototype.definePrivateProp = function( prop, initial ){
@@ -96,7 +97,7 @@ DataObject.prototype.save = function(params){
 }
 
 DataObject.prototype.delete = function(){
-  return this.action("delete")
+  return this.action("delete")()
 }
 
 //may used as  refresh
