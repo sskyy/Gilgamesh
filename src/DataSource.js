@@ -212,7 +212,7 @@ DataSource.prototype.makePublicProxy = function( name, instance, proxy ){
 
 DataSource.prototype.defineProxyProperties = function( name, instance , proxy){
   var root = this
-  for( var i in instance ){
+  util.forOwn( instance, function( value, i){
     if( typeof instance[i] !== "function"){
       Object.defineProperty( proxy, i, {
         enumerable : true,
@@ -226,7 +226,7 @@ DataSource.prototype.defineProxyProperties = function( name, instance , proxy){
         }
       })
     }
-  }
+  })
   return proxy
 }
 
