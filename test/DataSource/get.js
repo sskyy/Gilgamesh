@@ -21,13 +21,17 @@ describe("Get Object", function(){
 
   beforeEach(function(){
     D("user",{
+      url : {
+        base : "",
+        single : "/user/{id}/{action}",
+        collection : "/user/{action}"
+      },
       query : function(  settings ){
-        console.log("settings", settings.url)
         if( /\/user\/\d+/.test(settings.url)  ){
           return new Promise(function( resolve){
             setTimeout(function(){
               var id =  parseInt( settings.url.split("/").pop() )
-              console.log( "resolving", _.find(userList,{id:id}), userList, {id:id})
+              //console.log( "resolving", _.find(userList,{id:id}), userList, {id:id})
               resolve(_.find(userList,{id:id}))
             },100)
           })
@@ -111,7 +115,6 @@ describe("Get Object", function(){
       if( filled ){
         if( !refreshed ){
           assert.equal( userObject.id, idToGet )
-          console.log("getting", idToGet+1)
           userObject.get({id: idToGet+1})
           refreshed = true
         }else{

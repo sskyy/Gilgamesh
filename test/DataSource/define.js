@@ -12,8 +12,8 @@ describe("Define", function(){
     var autoCol = "post"
     var autoDef = D(autoCol,{})
     //assert.equal( autoDef instanceof DataSource,  true)
-    assert.equal( autoDef.url.collection,  "/"+autoCol+"/{action}" )
-    assert.equal( autoDef.url.single,  "/"+autoCol+"/{id}/{action}" )
+    assert.equal( autoDef.url.collection(autoCol),  "/"+autoCol+"/{action}" )
+    assert.equal( autoDef.url.single(autoCol),  "/"+autoCol+"/{id}/{action}" )
   })
 
   it("custom definition",function(){

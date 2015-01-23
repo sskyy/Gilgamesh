@@ -48,7 +48,16 @@ function DataArray(config, context){
     globalWatcherName : "/"
   }))
 
-  root.definePrivateProp("$$unFilledSlices",[])
+  root.definePrivateProp("$$unFilledSliceFns",[])
+  root.onStatus("$$filled", function(filled){
+    if( filled ){
+      root.$$unFilledSliceFns.forEach(function(sliceFn){
+        sliceFn( root.$$data )
+      })
+      root.$$unFilledSlices = []
+    }
+  })
+
 
   root.definePrivateProp("$$context", context)
 
@@ -104,9 +113,12 @@ DataArray.prototype.set = function( obj ){
   return this
 }
 
+DataArray.prototype.empty = function(){
+
+}
+
 
 DataArray.prototype.setData = function( data ){
-  this.$$data = data
   var root = this
   var i = 0, length = Math.max(data.length, this.$$data.length)
   //delete useless indexes
@@ -128,15 +140,34 @@ DataArray.prototype.setItem = function( index, initial ){
     set : function( dataToSet ){
       var wrappedData
       if( ! (dataToSet instanceof  DataObject)){
-        wrappedData = new DataObject(root.$$config)
-        wrappedData.set(dataToSet)
+        wrappedData = generateObject( dataToSet, root)
       }else{
         wrappedData = dataToSet
       }
       root.$$data[index] = wrappedData
     }
   })
-  root[index] = initial
+
+  function generateObject( dataToSet, root){
+    var wrappedData
+    wrappedData = new DataObject(root.$$config)
+    wrappedData.set(dataToSet )
+    wrappedData.definePrivateProp("$$collection", root)
+    return wrappedData
+  }
+  root[index] = generateObject( initial, root)
+}
+
+DataArray.prototype.watchItem = function( item, index ){
+  var root = this
+  //add action listener
+  item.onStatus(function(v,o,change){
+    if( /\$\$actions\.\w+/.test(change.name) ){
+      root.dispatchChange(util.extend(util.cloneDeep(change),{name:index+"."+change.name}) , root.$$config.globalWatcherName )
+    }
+  })
+
+  return item
 }
 
 DataArray.prototype.setContext = function( context ){
@@ -165,12 +196,46 @@ DataArray.prototype.singular = function( item ){
   return this.invokeDataSourceMethod("singular",item)
 }
 
+//publish and receive
+DataArray.prototype.publish = DataObject.prototype.publish
+DataArray.prototype.receive = DataObject.prototype.receive
+DataArray.prototype.receiveObject = DataObject.prototype.receiveObject
+DataArray.prototype.receiveArray = DataObject.prototype.receiveArray
+
 
 //map array methods
-util.forEach(["push","pop","shift","unshift","slice","splice","forEach"],function( method){
+util.forEach(["forEach","indexOf"],function( method){
   DataArray.prototype[method] = function(){
-    this.$$data[method].apply(this.$$data, arguments)
+    var result = this.$$data[method].apply(this.$$data, arguments)
+    return result
+  }
+})
+
+util.forEach(["push","pop","shift","unshift","splice"],function( method){
+  DataArray.prototype[method] = function(){
+    var result = this.$$data[method].apply(this.$$data, arguments)
+
     this.setData(this.$$data)
+    return result
+  }
+})
+
+util.forEach(['slice','map'], function( method ){
+  DataArray.prototype[method] = function(){
+
+    var slice = new DataArray( this.$$config, this.$$context)
+    var root = this
+    var args = Array.prototype.slice.call(arguments)
+
+    if( this.$$filled ){
+      slice.set( root.$$data[method].apply( root.$$data, args ) )
+    }else{
+      root.$$unFilledSliceFns.push( function( data ){
+        slice.set( data[method].apply( data, args ) )
+      })
+    }
+
+    return slice
   }
 })
 
@@ -179,12 +244,18 @@ DataArray.prototype.pluck = function( attr ){
 }
 
 DataArray.prototype.filter = function( attr, filterDef ){
-  var filterFn = filterDef
+  var filterFn = attr
   var root = this
 
   if( !( filterFn instanceof Function) ){
     filterFn = function( item ){
-      return util.isArray( filterDef ) ? (filterDef.indexOf(item[attr])!==-1) : (item[attr] === filterDef)
+      if( typeof attr== 'string'){
+        return util.isArray( filterDef ) ? (filterDef.indexOf(item[attr]) !== -1)  : (item[attr] === filterDef)
+      }else if( util.isObject( attr ) ){
+        return
+      }else{
+        throw new Error("unrecognized filter")
+      }
     }
   }
 
@@ -193,13 +264,8 @@ DataArray.prototype.filter = function( attr, filterDef ){
   if( this.$$filled ){
     slice.set( root.$$data.filter( filterFn ) )
   }else{
-    root.$$unFilledSlices.push( slice )
-    root.onStatus("$$filled", function(filled){
-      if( filled ){
-        root.$$unFilledSlices.forEach(function(slice){
-          slice.set( root.$$data.filter( filterFn ) )
-        })
-      }
+    root.$$unFilledSliceFns.push( function( data  ){
+      slice.set( data.filter( filterFn )  )
     })
   }
 
@@ -237,6 +303,7 @@ function DataObject( config ){
   root.definePrivateProp("$$config",util.defaults( config,{
     globalWatcherName : "/"
   }))
+
 }
 
 
@@ -259,9 +326,9 @@ DataObject.prototype.changePropAndNotify = function( prop, val ){
   var oldValue = getRef(this,prop)
   setRef(this,prop,val)
 
-  this.dispatchChange({name:prop,oldValue:oldValue},prop)
+  this.dispatchChange({value: getRef( this,prop), name:prop,oldValue:oldValue},prop)
   //notify all global listener
-  this.dispatchChange( {name:prop,oldValue:oldValue}, this.$$config.globalWatcherName )
+  this.dispatchChange( {value: getRef( this,prop), name:prop,oldValue:oldValue}, this.$$config.globalWatcherName )
 }
 
 DataObject.prototype.toObject = function(){
@@ -286,8 +353,24 @@ DataObject.prototype.invokeDataSourceMethod = function( method ){
 
 DataObject.prototype.publish = function( name){
   //return this.invokeDataSourceMethod("publish", this, name)
-  var data = this.invokeDataSourceMethod("publish", this, name)
-  return data
+  return this.invokeDataSourceMethod("publish", this, name)
+}
+
+DataObject.prototype.receiveObject = function( name){
+  return this.invokeDataSourceMethod("receiveObject", name)
+}
+
+DataObject.prototype.receive = function( name){
+  return this.invokeDataSourceMethod("receive", name)
+}
+
+DataObject.prototype.receiveArray = function( name){
+  return this.invokeDataSourceMethod("receiveArray",  name)
+}
+
+DataObject.prototype.singular = function( doNotWatch ){
+  //return this.invokeDataSourceMethod("publish", this, name)
+  return this.invokeDataSourceMethod("singular", this, doNotWatch )
 }
 
 
@@ -295,12 +378,18 @@ DataObject.prototype.action = function( action ){
   var root = this
   return function( params ){
     root.changePropAndNotify("$$actions."+action, "executing")
-    return root.invokeDataSourceMethod("action", action)(root, params).then(function(){
+    return root.invokeDataSourceMethod("action", action)(root, params).then(function(res){
       root.changePropAndNotify("$$actions."+action, "succeed")
-    },function(){
+      return res
+    },function(res){
       root.changePropAndNotify("$$actions."+action, "failed")
+      return res
     })
   }
+}
+
+DataObject.prototype.clone = function(){
+  return this.$$config.dataSource.new( this.toObject() )
 }
 
 //quick methods
@@ -320,7 +409,6 @@ DataObject.prototype.get = function( params ){
     params = {}
     params[this.$$config.dataSource.pk] = this[this.$$config.dataSource.pk]
   }
-  console.log("regeting", params)
   this.$$config.dataSource.get( params, this)
 }
 
@@ -367,7 +455,7 @@ DataObject.prototype.dispatchChange = function( change, prop){
 
   root.$$watchers[prop] && root.$$watchers[prop].forEach(function( handler ) {
     //TODO should change pop up?
-    handler( getRef(root,change.name), change.oldValue, change)
+    handler( change.value , change.oldValue, change)
   })
 }
 
@@ -382,27 +470,13 @@ var DataArray = require("./DataArray")
 function DataSource( name, def ){
   //caution, cloneDeep may change function to object if not using custom callback
 
-
-  util.extend( this, util.defaults( def||{}, util.cloneDeep( this.globalConfig, function(v){
-    if( v instanceof Function ){
-      return v
-    }
-  })))
-
-
-
-  if( this.url.collection instanceof Function){
-    this.url.collection = this.url.collection(name)
-  }
-  if( this.url.single instanceof Function){
-    this.url.single = this.url.single(name)
-  }
-
-
+  var config =  util.cloneDeep( DataSource.prototype.config )
+  util.extend( this, util.merge( config, def ) )
+  this.name = name
 }
 
 //allow overwrite
-DataSource.prototype.globalConfig = {
+DataSource.prototype.config = {
     url : {
       base : "",
       collection : function(name){return "/" + name+"/{action}"},
@@ -410,6 +484,7 @@ DataSource.prototype.globalConfig = {
     },
     pk : "id", //TODO allow array
     publicDataSources : {},
+    publicDataSourceProxies : {},
     actions : {
       save : function( instance, params, dataSource ){
         return {
@@ -426,13 +501,19 @@ DataSource.prototype.globalConfig = {
         }
       }
     },
-    singular : function( item ){
+    singular : function( item, doNotWatch ){
+      if( !doNotWatch){
+        item.$$collection.watchItem( item )
+      }
       return item
     },
     interceptors : {
       "get" : [],
       "query" : [],
-      "parse" : []
+      "parse" : [],
+      "action" : {
+
+      }
     }
   }
 
@@ -453,7 +534,16 @@ DataSource.prototype.interpolate = function( text, obj ){
 }
 
 DataSource.prototype.makeUrl = function( params ){
-  return this.interpolate( this.url.base + (this.hasPrimaryKey(params )? this.url.single : this.url.collection), params).replace(/\/*\s*$/,"")
+  var url = (this.url.base +
+    util.result(
+      this.hasPrimaryKey(params )
+        ? this.url.single
+        : this.url.collection,
+      this.name,
+      params
+    ))
+
+  return this.interpolate( url, params).replace(/\/+\s*$/,"").replace(/\/{2,}/,"/")
 }
 
 
@@ -500,7 +590,7 @@ DataSource.prototype.get = function( params, instanceOrCollection ){
   this.query( settings  ).then(function( res ){
     var parseInterceptors = [].concat( root.interceptors.parse )
     parseInterceptors.forEach(function(interceptor){
-      res = interceptor( res, isSingle )
+      res = interceptor( res, isSingle, settings )
     })
 
     instanceOrCollection.set( res )
@@ -509,40 +599,120 @@ DataSource.prototype.get = function( params, instanceOrCollection ){
   return instanceOrCollection
 }
 
-DataSource.prototype.new = function(){
-  return new DataObject({dataSource:this})
+DataSource.prototype.new = function( data ){
+  var object = new DataObject({dataSource:this})
+  object.definePrivateProp("$$new", true)
+  if( data ) object.set(data)
+  return object
+}
+
+DataSource.prototype.newArray = function( data, params ){
+  var object = new DataArray({dataSource:this}, params||{})
+  object.definePrivateProp("$$new", true)
+
+  if( data ){
+    if( util.isFunction(data.then) ){
+      //promise
+      data.then(function( resolvedData ){
+        object.set( resolvedData )
+      })
+    }else{
+      object.set(data)
+    }
+  }
+  return object
 }
 
 DataSource.prototype.publish = function( instance, name ){
-  if( this.publicDataSources[name] ){
-    //Todo, make it proxy to instance.
-    this.publicDataSources[name].set( instance.$$data || instance.toObject() )
-  }else{
-    this.publicDataSources[name] = instance
+  if( !instance  ){
+    throw new Error("cannot publish undefined", name)
   }
 
-  return this.publicDataSources[name]
+  this.publicDataSources[name] = instance
+
+  if( this.publicDataSourceProxies[name] ){
+    this.makePublicProxy( name, instance, this.publicDataSourceProxies[name] )
+  }else{
+    this.publicDataSourceProxies[name] = this.makePublicProxy( name, instance )
+  }
+
+  console.log("publishing",this.publicDataSourceProxies[name])
+  return this.publicDataSourceProxies[name]
+}
+
+DataSource.prototype.makePublicProxy = function( name, instance, proxy ){
+  var root =this
+
+  if( !proxy ){
+    if( instance instanceof DataObject || util.isNaiveObject(instance) ){
+      proxy = new DataObject({dataSource:this})
+    }else{
+      proxy = new DataArray({dataSource:this})
+    }
+  }
+
+  if( proxy.$$filled ){
+    if( proxy instanceof DataArray ){
+      proxy.splice(0)
+    }else{
+      for( var i in proxy ){
+        delete proxy[i]
+      }
+    }
+  }
+
+  if( proxy instanceof DataArray ){
+    var _proxy = []
+    root.defineProxyProperties(name, instance, _proxy)
+    proxy.set(_proxy)
+  }else{
+    root.defineProxyProperties(name, instance, proxy)
+  }
+
+  proxy.changePropAndNotify("$$filled",true)
+
+  return proxy
+}
+
+DataSource.prototype.defineProxyProperties = function( name, instance , proxy){
+  var root = this
+  for( var i in instance ){
+    if( typeof instance[i] !== "function"){
+      Object.defineProperty( proxy, i, {
+        enumerable : true,
+        configurable: true,
+        get : function(){
+          return root.publicDataSources[name][i]
+        },
+        set : function( newValue ){
+          root.publicDataSources[name][i] = newValue
+          return newValue
+        }
+      })
+    }
+  }
+  return proxy
 }
 
 
 DataSource.prototype.receive = function(name){
-  return this.publicDataSources[name]
+  return this.publicDataSourceProxies[name]
 }
 
 DataSource.prototype.receiveObject = function(name){
-  if( !this.publicDataSources[name] ){
-    this.publicDataSources[name]  = new DataObject({dataSource:this})
+  if( !this.publicDataSourceProxies[name] ){
+    this.publicDataSourceProxies[name]  = new DataObject({dataSource:this})
   }
 
-  return this.publicDataSources[name]
+  return this.publicDataSourceProxies[name]
 }
 
 DataSource.prototype.receiveArray = function(name){
   var obj
-  if( this.publicDataSources[name] ){
-    obj =  this.publicDataSources[name]
+  if( this.publicDataSourceProxies[name] ){
+    obj =  this.publicDataSourceProxies[name]
   }else{
-    this.publicDataSources[name] = obj = new DataArray({dataSource:this})
+    this.publicDataSourceProxies[name] = obj = new DataArray({dataSource:this})
   }
 
   return obj
@@ -558,12 +728,21 @@ DataSource.prototype.generateAction = function( action ){
 
 
     var isBatch = instanceOrCollections instanceof DataArray
-
-    return root.query(util.defaults( def , {
-      url : root.interpolate(root.url[isBatch?"collection":"single"] ,{id:instanceOrCollections.id,action:action}),
+    var settings = util.defaults( def ||{}, {
+      url : root.makeUrl({id:instanceOrCollections.id,action:action}),
       method : "PUT",
-      data : util.extend( isBatch? util.zipObject([root.pk], [instanceOrCollections.pluck("id") ]):{}, params)
-    }))
+      data :  util.extend( isBatch? util.zipObject([root.pk], [instanceOrCollections.pluck("id") ]):{}, params)
+    })
+
+
+    return root.query(settings).then(function( res ){
+      if( root.interceptors.action[action] ){
+        root.interceptors.action[action].forEach(function(interceptor){
+          res = interceptor(res, settings)
+        })
+      }
+      return res
+    })
   }
 }
 
@@ -599,15 +778,7 @@ module.exports = function(id){
 })(window||this)
 },{"./D.js":1,"./DataSource":4,"./Element.js":5}],7:[function(require,module,exports){
 var util = {
-  forEach : function( arr, cb ){
-    return arr.forEach(cb)
-  },
-  defaults : function( target, defaults){
-    for( var i in defaults ){
-      if( target[i] === undefined ) target[i] = defaults[i]
-    }
-    return target
-  },
+
   isArray : function( obj ){
     return Object.prototype.toString.call(obj) === "[object Array]"
   },
@@ -617,16 +788,34 @@ var util = {
   isObject : function( obj ){
     return typeof obj == "object"
   },
+  isPlainObject : function(){
+    return Object.prototype.toString.call(obj) === "[object Object]"
+  },
+  isNaiveObject : function(obj){
+    return (typeof obj == "object")&& !util.isArray(obj)
+  } ,
   isUndefined : function( obj ){
     return obj === undefined
   },
   inArray : function( i, arr ){
     return arr.indexOf(i) !== -1
   },
+  forEach : function( arr, cb ){
+    return arr.forEach(cb)
+  },
+  defaults : function( target, defaults, deep){
+    for( var i in defaults ){
+      if( target[i] === undefined ){
+        target[i] = defaults[i]
+      }else if( deep && util.isNaiveObject(target) && util.isNaiveObject(defaults) ){
+        util.defaults( target[i], defaults[i] )
+      }
+    }
+    return target
+  },
   difference : function( target, toDiff){
-    var root = this
     return target.filter(function(v){
-      return !root.inArray( v, toDiff)
+      return !util.inArray( v, toDiff)
     })
   },
   pluck : function( arr, attr){
@@ -635,6 +824,18 @@ var util = {
   extend:function( target, source){
     for( var i in source ){
       if( source.hasOwnProperty(i) ){
+        target[i] = source[i]
+      }
+    }
+    return target
+  },
+  merge : function( target, source, mergeArray ){
+    for( var i in source ){
+      if( util.isNaiveObject(target[i]) && util.isNaiveObject(source[i])){
+        util.merge( target[i], source[i])
+      }else if( mergeArray && util.isArray(target[i]) && util.isArray(source[i])){
+        target[i] = target[i].concat( source[i])
+      }else{
         target[i] = source[i]
       }
     }
@@ -649,7 +850,7 @@ var util = {
   },
   clone : function(source, handler){
     var o = util.isArray(source ) ? [] : {}
-    this.forOwn(source, function(v,k){
+    util.forOwn(source, function(v,k){
       var r
       if( handler ) r = handler(v,k )
       o[k] = (r ===undefined) ? v : r
@@ -657,12 +858,18 @@ var util = {
     return o
   },
   cloneDeep:function( source, handler ){
-    var root = this
-    return root.isObject(source) ?  this.clone( source, function( v, k){
+    return util.isObject(source) ?  util.clone( source, function( v, k){
       var r
       if( handler ) r = handler(v,k )
-      return (r ===undefined) ? root.cloneDeep(v, handler) : r
+      return (r ===undefined) ? util.cloneDeep(v, handler) : r
     }) : source
+  },
+  partialRight : function(fn){
+    var partialArgs = Array.prototype.slice.call( arguments, 1 )
+    return function(){
+      var args = Array.prototype.slice.call( arguments).concat( partialArgs )
+      return fn.apply( fn, args)
+    }
   },
   toArray:function( arrLike){
     return Array.prototype.slice.call(arrLike)
@@ -674,7 +881,15 @@ var util = {
       o[key] = values[i]
     })
     return o
+  },
+  result : function( fn ){
+    if( util.isFunction(fn) ){
+      return fn.apply( fn, Array.prototype.slice.call(arguments,1) )
+    }else{
+      return fn
+    }
   }
+
 }
 
 module.exports = util

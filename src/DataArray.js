@@ -25,7 +25,16 @@ function DataArray(config, context){
     globalWatcherName : "/"
   }))
 
-  root.definePrivateProp("$$unFilledSlices",[])
+  root.definePrivateProp("$$unFilledSliceFns",[])
+  root.onStatus("$$filled", function(filled){
+    if( filled ){
+      root.$$unFilledSliceFns.forEach(function(sliceFn){
+        sliceFn( root.$$data )
+      })
+      root.$$unFilledSlices = []
+    }
+  })
+
 
   root.definePrivateProp("$$context", context)
 
@@ -81,9 +90,12 @@ DataArray.prototype.set = function( obj ){
   return this
 }
 
+DataArray.prototype.empty = function(){
+
+}
+
 
 DataArray.prototype.setData = function( data ){
-  this.$$data = data
   var root = this
   var i = 0, length = Math.max(data.length, this.$$data.length)
   //delete useless indexes
@@ -105,15 +117,34 @@ DataArray.prototype.setItem = function( index, initial ){
     set : function( dataToSet ){
       var wrappedData
       if( ! (dataToSet instanceof  DataObject)){
-        wrappedData = new DataObject(root.$$config)
-        wrappedData.set(dataToSet)
+        wrappedData = generateObject( dataToSet, root)
       }else{
         wrappedData = dataToSet
       }
       root.$$data[index] = wrappedData
     }
   })
-  root[index] = initial
+
+  function generateObject( dataToSet, root){
+    var wrappedData
+    wrappedData = new DataObject(root.$$config)
+    wrappedData.set(dataToSet )
+    wrappedData.definePrivateProp("$$collection", root)
+    return wrappedData
+  }
+  root[index] = generateObject( initial, root)
+}
+
+DataArray.prototype.watchItem = function( item, index ){
+  var root = this
+  //add action listener
+  item.onStatus(function(v,o,change){
+    if( /\$\$actions\.\w+/.test(change.name) ){
+      root.dispatchChange(util.extend(util.cloneDeep(change),{name:index+"."+change.name}) , root.$$config.globalWatcherName )
+    }
+  })
+
+  return item
 }
 
 DataArray.prototype.setContext = function( context ){
@@ -142,12 +173,46 @@ DataArray.prototype.singular = function( item ){
   return this.invokeDataSourceMethod("singular",item)
 }
 
+//publish and receive
+DataArray.prototype.publish = DataObject.prototype.publish
+DataArray.prototype.receive = DataObject.prototype.receive
+DataArray.prototype.receiveObject = DataObject.prototype.receiveObject
+DataArray.prototype.receiveArray = DataObject.prototype.receiveArray
+
 
 //map array methods
-util.forEach(["push","pop","shift","unshift","slice","splice","forEach"],function( method){
+util.forEach(["forEach","indexOf"],function( method){
   DataArray.prototype[method] = function(){
-    this.$$data[method].apply(this.$$data, arguments)
+    var result = this.$$data[method].apply(this.$$data, arguments)
+    return result
+  }
+})
+
+util.forEach(["push","pop","shift","unshift","splice"],function( method){
+  DataArray.prototype[method] = function(){
+    var result = this.$$data[method].apply(this.$$data, arguments)
+
     this.setData(this.$$data)
+    return result
+  }
+})
+
+util.forEach(['slice','map'], function( method ){
+  DataArray.prototype[method] = function(){
+
+    var slice = new DataArray( this.$$config, this.$$context)
+    var root = this
+    var args = Array.prototype.slice.call(arguments)
+
+    if( this.$$filled ){
+      slice.set( root.$$data[method].apply( root.$$data, args ) )
+    }else{
+      root.$$unFilledSliceFns.push( function( data ){
+        slice.set( data[method].apply( data, args ) )
+      })
+    }
+
+    return slice
   }
 })
 
@@ -156,12 +221,18 @@ DataArray.prototype.pluck = function( attr ){
 }
 
 DataArray.prototype.filter = function( attr, filterDef ){
-  var filterFn = filterDef
+  var filterFn = attr
   var root = this
 
   if( !( filterFn instanceof Function) ){
     filterFn = function( item ){
-      return util.isArray( filterDef ) ? (filterDef.indexOf(item[attr])!==-1) : (item[attr] === filterDef)
+      if( typeof attr== 'string'){
+        return util.isArray( filterDef ) ? (filterDef.indexOf(item[attr]) !== -1)  : (item[attr] === filterDef)
+      }else if( util.isObject( attr ) ){
+        return
+      }else{
+        throw new Error("unrecognized filter")
+      }
     }
   }
 
@@ -170,13 +241,8 @@ DataArray.prototype.filter = function( attr, filterDef ){
   if( this.$$filled ){
     slice.set( root.$$data.filter( filterFn ) )
   }else{
-    root.$$unFilledSlices.push( slice )
-    root.onStatus("$$filled", function(filled){
-      if( filled ){
-        root.$$unFilledSlices.forEach(function(slice){
-          slice.set( root.$$data.filter( filterFn ) )
-        })
-      }
+    root.$$unFilledSliceFns.push( function( data  ){
+      slice.set( data.filter( filterFn )  )
     })
   }
 
