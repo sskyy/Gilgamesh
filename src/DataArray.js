@@ -99,9 +99,10 @@ DataArray.prototype.setData = function( data ){
   var root = this
   var i = 0, length = Math.max(data.length, this.$$data.length)
   //delete useless indexes
+  this.$$data = []
   while( i<length ){
     if( root[i] ) delete root[i]
-    root.setItem( i, data[i])
+    if( data[i]) root.setItem( i, data[i])
     i++
   }
 }

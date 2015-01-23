@@ -122,9 +122,10 @@ DataArray.prototype.setData = function( data ){
   var root = this
   var i = 0, length = Math.max(data.length, this.$$data.length)
   //delete useless indexes
+  this.$$data = []
   while( i<length ){
     if( root[i] ) delete root[i]
-    root.setItem( i, data[i])
+    if( data[i]) root.setItem( i, data[i])
     i++
   }
 }
@@ -676,7 +677,7 @@ DataSource.prototype.makePublicProxy = function( name, instance, proxy ){
 
 DataSource.prototype.defineProxyProperties = function( name, instance , proxy){
   var root = this
-  for( var i in instance ){
+  util.forOwn( instance, function( value, i){
     if( typeof instance[i] !== "function"){
       Object.defineProperty( proxy, i, {
         enumerable : true,
@@ -690,7 +691,7 @@ DataSource.prototype.defineProxyProperties = function( name, instance , proxy){
         }
       })
     }
-  }
+  })
   return proxy
 }
 
