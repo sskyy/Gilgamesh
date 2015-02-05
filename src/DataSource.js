@@ -159,6 +159,11 @@ DataSource.prototype.newArray = function( data, params ){
   return object
 }
 
+DataSource.prototype.recycle = function( name ){
+  if( this.publicDataSources[name] ) delete this.publicDataSources[name]
+  if( this.publicDataSourceProxies[name] ) this.publicDataSourceProxies[name].destroy()
+}
+
 DataSource.prototype.publish = function( instance, name ){
   if( !instance  ){
     throw new Error("cannot publish undefined", name)

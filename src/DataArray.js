@@ -81,7 +81,7 @@ DataArray.prototype.get = function( params, append ){
  */
 DataArray.prototype.set = function( obj ){
   var root = this
-  if(util.isArray(obj)){
+  if(util.isArray(obj) || obj instanceof DataArray){
     obj = {data:obj,context:{}}
   }
   root.setData( obj.data )
@@ -101,13 +101,15 @@ DataArray.prototype.setData = function( data ){
   //delete useless indexes
   this.$$data = []
   while( i<length ){
-    if( root[i] ) delete root[i]
-    if( data[i]) root.setItem( i, data[i])
+    if( i < this.$$data.length  ) delete root[i]
+    //if( data[i]) root.setItem( i, data[i])  //can not use data[i] here, it will ignore undefined.
+    if( i <data.length ) root.setItem( i, data[i])
     i++
   }
 }
 
 DataArray.prototype.setItem = function( index, initial ){
+
   var root = this
   Object.defineProperty(root,index, {
     configurable : true,
@@ -122,11 +124,14 @@ DataArray.prototype.setItem = function( index, initial ){
       }else{
         wrappedData = dataToSet
       }
-      root.$$data[index] = wrappedData
+      //root.$$data[index] = wrappedData
+      //debugger
+      root.$$data.push(wrappedData) //must use push to add new item, or undefined will be
     }
   })
 
   function generateObject( dataToSet, root){
+    if( !(typeof dataToSet == 'object')) return dataToSet
     var wrappedData
     wrappedData = new DataObject(root.$$config)
     wrappedData.set(dataToSet )
@@ -166,6 +171,7 @@ DataArray.prototype.onStatus = DataArray.prototype.watch = DataObject.prototype.
 DataArray.prototype.changePropAndNotify = DataObject.prototype.changePropAndNotify
 DataArray.prototype.dispatchChange= DataObject.prototype.dispatchChange
 DataArray.prototype.notify= DataObject.prototype.notify
+DataArray.prototype.destroy= DataObject.prototype.destroy
 
 //actions
 DataArray.prototype.invokeDataSourceMethod = DataObject.prototype.invokeDataSourceMethod
@@ -182,7 +188,7 @@ DataArray.prototype.receiveArray = DataObject.prototype.receiveArray
 
 
 //map array methods
-util.forEach(["forEach","indexOf"],function( method){
+util.forEach(["forEach","indexOf","join"],function( method){
   DataArray.prototype[method] = function(){
     var result = this.$$data[method].apply(this.$$data, arguments)
     return result
@@ -206,7 +212,7 @@ util.forEach(['slice','map'], function( method ){
     var args = Array.prototype.slice.call(arguments)
 
     if( this.$$filled ){
-      slice.set( root.$$data[method].apply( root.$$data, args ) )
+      slice.set( Array.prototype[method].apply( root.$$data, args ) )
     }else{
       root.$$unFilledSliceFns.push( function( data ){
         slice.set( data[method].apply( data, args ) )

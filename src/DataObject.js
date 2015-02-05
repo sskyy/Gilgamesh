@@ -30,9 +30,22 @@ function DataObject( config ){
 
 
 DataObject.prototype.set =function(obj){
+  for( var i in this){
+    if( this.hasOwnProperty(i)) delete this[i]
+  }
   util.extend( this, obj )
   this.changePropAndNotify("$$filled",true)
   return this
+}
+
+DataObject.prototype.destroy = function(){
+  for( var i in this){
+    delete this[i]
+  }
+  for( var j in this.$$watchers){
+    delete this.$$watchers[j]
+  }
+  this.changePropAndNotify("$$destroy",true)
 }
 
 DataObject.prototype.definePrivateProp = function( prop, initial ){
