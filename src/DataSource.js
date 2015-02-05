@@ -7,7 +7,7 @@ function DataSource( name, def ){
   //caution, cloneDeep may change function to object if not using custom callback
 
   var config =  util.cloneDeep( DataSource.prototype.config )
-  util.extend( this, util.merge( config, def ) )
+  util.extend( this, util.merge( config, def, true ) )
   this.name = name
 }
 
